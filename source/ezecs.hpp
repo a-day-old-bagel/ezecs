@@ -20,24 +20,16 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#include <SDL_timer.h>
-#include "ecsSystem_movement.h"
+#ifndef EZECS_EZECS_HPP
+#define EZECS_EZECS_HPP
 
-namespace ecs {
+#include "ecsComponents.generated.hpp"
+#include "ecsDelegate.hpp"
+#include "ecsHelpers.hpp"
+#include "ecsKvMap.hpp"
+#include "ecsState.generated.hpp"
+#include "ecsSystem.hpp"
 
-  MovementSystem::MovementSystem(State *state) : System(state) {
+#include "test.generated.hpp"
 
-  }
-  bool MovementSystem::onInit() {
-    return true;
-  }
-  void MovementSystem::onTick(float dt) {
-    for (auto id : registries[0].ids) {
-      Scale* scale;
-      state->getScale(id, &scale);
-      ScalarMultFunc* scalarMultFunc;
-      state->getScalarMultFunc(id, &scalarMultFunc);
-      scale->vec = scalarMultFunc->multByFuncOfTime(scale->lastVec, SDL_GetTicks());
-    }
-  }
-}
+#endif //EZECS_EZECS_HPP

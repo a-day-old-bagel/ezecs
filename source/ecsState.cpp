@@ -21,9 +21,9 @@
  * IN THE SOFTWARE.
  */
 #include <limits>
-#include "ecsState.h"
+#include "ecsState.generated.hpp"
 
-namespace ecs {
+namespace ezecs {
   CompOpReturn State::createEntity(entityId *newId) {
     entityId id;
     if (freedIds.empty()) {
@@ -48,7 +48,9 @@ namespace ecs {
     if (status != SUCCESS) {
       return NONEXISTENT_ENT; // only fail status possible here indicates no existence component, hence no entity.
     }
-    GEN_CLEAR_ENT_LOOP_DEFN(ALL_COMPS)
+    
+    // A LOOP TO CLEAR ALL COMPONENTS APPEARS HERE
+    
     return SUCCESS;
   }
 
@@ -58,14 +60,17 @@ namespace ecs {
     if (status != SUCCESS) {
       return NONEXISTENT_ENT; // only fail status possible here indicates no existence component, hence no entity.
     }
-    GEN_DEL_ENT_LOOP_DEFN(ALL_COMPS)
+    
+    // A LOOP TO DELETE ALL COMPONENTS APPEARS HERE
+    
     freedIds.push(id);
     return SUCCESS;
   }
 
   void State::listenForLikeEntities(const compMask& likeness,
                                     EntNotifyDelegate&& additionDelegate, EntNotifyDelegate&& removalDelegate) {
-    GEN_LISTEN_FOR_LIKE_ENTITIES_INTERNALS(ALL_COMPS)
+    
+    // CODE TO REGISTER THE APPROPRIATE CALLBACKS APPEARS HERE
   }
 
   template<typename compType, typename ... types>
@@ -76,9 +81,9 @@ namespace ecs {
       if (existence->passesPrerequisitesForAddition(compType::requiredComps)) {
         if (coll.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(args...))) {
           existence->turnOnFlags(compType::flag);
-          for (auto dlgt : callbacks) {
+          for (auto dlgt : callbacks) { // TODO: This logic seems wrong
             if ((comps_Existence.at(id).componentsPresent & dlgt.likeness) == dlgt.likeness) {
-              dlgt.dlgt(id, dlgt.data);
+              dlgt.fire(id);
             }
           }
           return SUCCESS;
@@ -100,9 +105,9 @@ namespace ecs {
             comps_Existence.at(id).turnOffFlags(compType::flag);
           }
           coll.erase(id);
-          for (auto dlgt : callbacks) {
+          for (auto dlgt : callbacks) {  // TODO: This logic seems wrong
             if ((comps_Existence.at(id).componentsPresent & dlgt.likeness) != dlgt.likeness) {
-              dlgt.dlgt(id, dlgt.data);
+              dlgt.fire(id);
             }
           }
           return SUCCESS;
@@ -124,8 +129,14 @@ namespace ecs {
   }
 
   /*
-   * GEN_COLL_DEFNS wraps calls to the GEN_COMP_COLL_DEFN macro as defined in ecsComponents.h.
-   * The GEN_COMP_COLL_DEFN macros DEFINE collections of each type of component and methods to access and modify them.
+   * Component collection manipulation method definitions
    */
-  GEN_COLL_DEFNS
+  CompOpReturn State::addExistence(const entityId& id ) { return addComp(comps_Existence, id, addCallbacks_Existence); }
+  CompOpReturn State::remExistence(const entityId& id) { return remComp(comps_Existence, id, remCallbacks_Existence); }
+  CompOpReturn State::getExistence(const entityId& id, Existence** out) { return getComp(comps_Existence, id, out); }
+  void State::registerAddCallback_Existence (EntNotifyDelegate& dlgt) { addCallbacks_Existence.push_back(dlgt); }
+  void State::registerRemCallback_Existence (EntNotifyDelegate& dlgt) { remCallbacks_Existence.push_back(dlgt); }
+  
+  // COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE
+  
 }

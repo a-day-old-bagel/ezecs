@@ -26,20 +26,20 @@
 #include <stack>
 #include <functional>
 #include <vector>
-#include "ecsAutoGen.h"
-#include "ecsComponents.h"
-#include "ecsDelegate.h"
-#include "ecsKvMap.h"
+#include "ecsComponents.generated.hpp"
+#include "ecsDelegate.hpp"
+#include "ecsKvMap.hpp"
 
-namespace ecs {
-
+namespace ezecs {
+  
   struct EntNotifyDelegate {
     Delegate<void(const entityId&, void* data)> dlgt;
     compMask likeness;
     void* data;
+    inline void fire(const entityId& id) { dlgt(id, data); }
   };
   typedef std::vector<EntNotifyDelegate> EntNotifyDelegates;
-
+  
   /**
    * Component Operation Return Values
    * are returned by all public accessors and mutators of EcsState
@@ -53,7 +53,7 @@ namespace ecs {
     DEPEND_FAIL,
     MAX_ID_REACHED,
   };
-
+  
   /**
    * EcsState - Entity Component System State
    * Within is contained all game state data pertaining to the ecs. This data takes the form of lots and lots
@@ -61,12 +61,9 @@ namespace ecs {
    * components themselves. Entities per se only exist as associations between components that share the same ID.
    */
   class State {
-      // TODO: add methods to add components by copy: add[component_name](component_name& copyThis)
       /**
-       * GEN_COLL_DECLS is defined in ecsComponents.h and simply wraps calls to the COMP_COLL_DECL macro.
-       * The COMP_COLL_DECL (Component Collection Declaration) macros DECLARE collections of each type of component,
-       * as well as methods to access and modify said collections. The following methods are generated (examples given
-       * for imaginary component 'FakeComponent'):
+       * Here appear collections of each type of component, as well as methods to access and modify each collection.
+       * These methods are formatted as follows (examples given for imaginary component 'FakeComponent'):
        *
        * * * COMPONENT ADDITION * * *
        * SYNTAX:  CompOpReturn add[component_name](entityId id, [applicable constructor arguments])
@@ -91,57 +88,71 @@ namespace ecs {
        * RETURNS: SUCCESS,
        *          NONEXISTENT_COMP if the component you're trying to access doesn't exist at that ID.
        */
-      GEN_COLL_DECLS
 
+      KvMap<entityId, Existence> comps_Existence;
+      std::vector<EntNotifyDelegate> addCallbacks_Existence;
+      std::vector<EntNotifyDelegate> remCallbacks_Existence;
+      CompOpReturn addExistence(const entityId& id);
+      CompOpReturn remExistence(const entityId& id);
+      CompOpReturn getExistence(const entityId& id, Existence** out);
+      void registerAddCallback_Existence (EntNotifyDelegate& dlgt);
+      void registerRemCallback_Existence (EntNotifyDelegate& dlgt);
+       
+      // COMPONENT COLLECTION DECLARATIONS APPEAR HERE
+      
+      // COMPONENT COLLECTION MANIPULATION METHOD DECLARATIONS APPEAR HERE
+    
     public:
-
+      
       /**
        * Creates a new entity (specifically an Existence component]
        * @param newId is set to the id of the newly created entity, or 0 if unsuccessful.
        * @return SUCCESS or MAX_ID_REACHED if the maximum value of the entityId type has been reached
        */
-      CompOpReturn createEntity(entityId *newId);
-
+      CompOpReturn createEntity(entityId* newId);
+      
       /**
        * Deletes all existing components from an entity except the Existence component
        * @param id The entity ID of the entity you wish to clear
        * @return SUCCESS or NONEXISENT_ENT if no entity exists at that id
        */
       CompOpReturn clearEntity(const entityId& id);
-
+      
       /**
        * Deletes an entity. It's ID may be re-used later, so this 'invalidates' the ID
        * @param id The entity ID of the entity you wish to delete
        * @return any of the possible return values of remExistence given that ID (see above)
        */
       CompOpReturn deleteEntity(const entityId& id);
-
+      
       /**
        * Use if you want to fire a callback whenever an entity with at least the components described by 'likeness'
-       * comes into or leaved existence.
+       * comes into or leaves existence.
        * @param likeness The component mask describing all components necessary for an entity to trigger these callbacks
        * @param callback_add Pointer to the callback to fire when a qualifying entity appears
        * @param callback_rem Pointer to the callback to fire when such an entity ceases to qualify
        */
       void listenForLikeEntities(const compMask& likeness,
                                  EntNotifyDelegate&& additionDelegate, EntNotifyDelegate&& removalDelegate);
-
+    
     private:
       entityId nextId = 0;
       std::stack<entityId> freedIds;
-
+      
       /*
-       * These are used by macros to generate the functions listed above (in the comment for GEN_COLL_DECLS
+       * These are used by the component collection manipulation methods
        */
       template<typename compType, typename ... types>
       CompOpReturn addComp(KvMap<entityId, compType>& coll, const entityId& id,
-                           const EntNotifyDelegates& callbacks, const types &... args);
+                           const EntNotifyDelegates& callbacks, const types& ... args);
+      
       template<typename compType>
       CompOpReturn remComp(KvMap<entityId, compType>& coll, const entityId& id, const EntNotifyDelegates& callbacks);
+      
       template<typename compType>
       CompOpReturn getComp(KvMap<entityId, compType>& coll, const entityId& id, compType** out);
   };
-
+  
 }
 
 #endif //ECS_STATE_H

@@ -7,7 +7,7 @@
 #ifndef ECS_DELEGATE_H
 #define  ECS_DELEGATE_H
 
-namespace ecs {
+namespace ezecs {
    /*
     * A note on type formattings: it's pretty much the same as for std::function (template arguments read like a
     * funciton signature: <return_type(param_type_0, param_type_1, ... , param_type_n)>

@@ -20,9 +20,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#include "ecsHelpers.h"
+#include "ecsHelpers.hpp"
 
-namespace ecs {
+namespace ezecs {
   #define GEN_CASE(e) case e: return #e
   std::string resolveErrorToString(CompOpReturn err) {
     switch (err) {

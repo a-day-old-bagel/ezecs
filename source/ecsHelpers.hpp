@@ -20,38 +20,35 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef LD2016_ECSSYSTEM_PHYSICS_H
-#define LD2016_ECSSYSTEM_PHYSICS_H
+#ifndef ECS_HELPERS_H
+#define ECS_HELPERS_H
 
-#include "ecsSystem.h"
-#include <btBulletDynamicsCommon.h>
+#include <string>
+#include "ecsState.generated.hpp"
 
-// TODO: figure out how to use bullet to simulate objects without collision components
-namespace ecs {
-  class PhysicsSystem : public System<PhysicsSystem> {
-      friend class System;
-      std::vector<compMask> requiredComponents = {
-          ENUM_Physics,
-          ENUM_Physics | ENUM_WasdControls
-      };
-      /* Global physics data structures */
-      btDispatcher *dispatcher;
-      btBroadphaseInterface *broadphase;
-      btConstraintSolver *solver;
-      btCollisionConfiguration *collisionConfiguration;
-      btDynamicsWorld *dynamicsWorld;
-      btCollisionShape* planeShape;
+#define _FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
-      btDefaultMotionState* groundMotionState;
-      btRigidBody* groundRigidBody;
-    public:
-      PhysicsSystem(State* state);
-      bool onInit();
-      void onTick(float dt);
-      void deInit();
-      bool onDiscover(const entityId& id);
-      bool onForget(const entityId& id);
+#define ECS_ERR_MSG(res, msg) EcsResult(_FILENAME, __LINE__, res, msg)
+#define ECS_ERR(res) EcsResult(_FILENAME, __LINE__, res)
+#define ECS_MSG(msg) EcsResult(_FILENAME, __LINE__, -1, msg)
+#define ECS_SUCCESS EcsResult();
+
+#define ECS_CHECK_ERR_MSG(res, msg) if (res != SUCCESS) return ECS_ERR_MSG(res, msg)
+#define ECS_CHECK_ERR(res) if (res != SUCCESS) { return ECS_ERR(res); }
+#define ECS_CHECK_MSG(res, msg) if (res != SUCCESS) { return ECS_MSG(msg); }
+
+namespace ezecs {
+  std::string resolveErrorToString(CompOpReturn err);
+
+  struct EcsResult {
+    int lineNumber;
+    CompOpReturn errCode;
+    std::string fileName, message;
+    EcsResult(const char* message = "");
+    EcsResult(const char *fileName, int lineNumber, CompOpReturn errCode, const char *message = "");
+    std::string toString();
+    inline bool isError() { return errCode != SUCCESS; }
   };
 }
 
-#endif //LD2016_ECSSYSTEM_PHYSICS_H
+#endif //ECS_HELPERS_H

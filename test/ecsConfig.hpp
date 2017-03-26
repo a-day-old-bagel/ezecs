@@ -23,6 +23,25 @@
 #ifndef EZECS_ECSCONFIG_HPP
 #define EZECS_ECSCONFIG_HPP
 
+#include "ezecs.hpp"
 
+using namespace ezecs;
+
+// BEGIN DECLARATIONS
+
+struct fooComp : public Component<fooComp> {
+  
+};
+
+class barComp : public Component<fooComp> {
+  
+};
+
+// END DECLARATIONS
+
+// BEGIN DEFINITIONS
+
+
+// END DEFINITIONS
 
 #endif //EZECS_ECSCONFIG_HPP

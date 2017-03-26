@@ -26,9 +26,9 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include "ecsState.h"
+#include "ecsState.generated.hpp"
 
-namespace ecs {
+namespace ezecs {
 
   typedef Delegate<bool(const entityId& id)> entNotifyHandler;
   static bool doNothing(const entityId&) { return true; }

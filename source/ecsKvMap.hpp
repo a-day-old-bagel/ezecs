@@ -31,7 +31,7 @@
 
 #include <unordered_map>
 
-namespace ecs {
+namespace ezecs {
 
   template<class K, class V>
   class KvMap {

@@ -21,9 +21,40 @@
  * IN THE SOFTWARE.
  */
 
-#include "test.generated.hpp"
+#include "ezecs.hpp"
+#include "ecsConfig.hpp"
+
+using namespace ezecs;
+
+class TestSystem : public System<TestSystem> {
+    friend class System;
+    std::vector<compMask> requiredComponents = {
+        ENUM_Existence
+    };
+  public:
+    TestSystem(State* state) : System(state) {
+        
+    }
+    bool onInit() {
+        return true;
+    }
+    void onTick(float dt) {
+        for (auto id : registries[0].ids) {
+            
+        }
+    }
+    void deInit() {
+        
+    }
+    bool onDiscover(const entityId& id) {
+        return true;
+    }
+    bool onForget(const entityId& id) {
+        return true;
+    }
+};
 
 int main (int argc, char *argv[]) {
-    ezecs::testFunction();
+    testFunction();
     return 0;
 }

@@ -27,21 +27,46 @@
 
 using namespace ezecs;
 
-// BEGIN DECLARATIONS
+namespace {
 
-struct fooComp : public Component<fooComp> {
-  
-};
+  // BEGIN DECLARATIONS
 
-class barComp : public Component<fooComp> {
-  
-};
+  struct FooComp : public Component<FooComp> {
+    int fakeA, fakeB;
 
-// END DECLARATIONS
+    FooComp(int fakeA, int fakeB);
+  };
+  EZECS_COMPONENT_DEPENDENCIES(FooComp)
 
-// BEGIN DEFINITIONS
+  class BarComp : public Component<BarComp> {
+      float number;
 
+      BarComp(float number);
+  };
+  EZECS_COMPONENT_DEPENDENCIES(BarComp, FooComp)
 
-// END DEFINITIONS
+  struct MehComp : public Component<MehComp> {
+    char boo, hoo;
+
+    MehComp(char boo, char hoo);
+  };
+  EZECS_COMPONENT_DEPENDENCIES(MehComp, FooComp, BarComp)
+
+  // END DECLARATIONS
+
+  // BEGIN DEFINITIONS
+
+  FooComp::FooComp(int fakeA, int fakeB)
+      : fakeA(fakeA), fakeB(fakeB) {}
+
+  BarComp::BarComp(float number)
+      : number(number) {}
+
+  MehComp::MehComp(char boo, char hoo)
+      : boo(boo), hoo(hoo) {}
+
+  // END DEFINITIONS
+
+}
 
 #endif //EZECS_ECSCONFIG_HPP

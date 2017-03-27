@@ -98,9 +98,7 @@ namespace ezecs {
       void registerAddCallback_Existence (EntNotifyDelegate& dlgt);
       void registerRemCallback_Existence (EntNotifyDelegate& dlgt);
        
-      // COMPONENT COLLECTION DECLARATIONS APPEAR HERE
-      
-      // COMPONENT COLLECTION MANIPULATION METHOD DECLARATIONS APPEAR HERE
+      // COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE
     
     public:
       

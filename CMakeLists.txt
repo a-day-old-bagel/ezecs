@@ -10,6 +10,10 @@ option( EZECS_BUILD_TEST "builds using the test case (exclusively)" ON )
 
 if ( EZECS_BUILD_TEST )
   message( WARNING "Ezecs is building with the test case configuration, as per option EZECS_BUILD_TEST" )
+  if ( EZECS_CONFIG_FILE )
+    message( WARNING "EZECS_CONFIG_FILE path is being overwritten by the ezecs test case! \
+           Turn off option EZECS_BUILD_TEST if this is a problem.")
+  endif()
   add_subdirectory( test )
 else ( EZECS_BUILD_TEST )
   add_subdirectory( source)

@@ -22,7 +22,6 @@
  */
 
 #include "ezecs.hpp"
-#include "ecsConfig.hpp"
 
 using namespace ezecs;
 

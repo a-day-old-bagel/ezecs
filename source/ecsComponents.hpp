@@ -95,19 +95,17 @@ namespace ezecs {
   // COMPONENT DECLARATIONS APPEAR HERE
     
   /*
-   * Component type enumerator
+   * Component type/flag enumerator
    */
   enum ComponentTypes {
-    NONE                    =  0,
-    ALL                     = -1,
-    ENUM_Existence          = 1 << 0,
-    
+    NONE =  0,
+    ALL = -1,
+    EXISTENCE = 1 << 0,
     // COMPONENT TYPE ENUMERATORS APPEAR HERE
-    
   };
 
   /*
-   * numCompTypes - how many component types there are
+   * numCompTypes - how many component types there are, not counting the Existence component type.
    */
   
   // NUMBER OF COMPONENT TYPES APPEARS HERE

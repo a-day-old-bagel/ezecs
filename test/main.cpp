@@ -28,7 +28,7 @@ using namespace ezecs;
 class TestSystem : public System<TestSystem> {
     friend class System;
     std::vector<compMask> requiredComponents = {
-        ENUM_Existence
+        EXISTENCE
     };
   public:
     TestSystem(State* state) : System(state) {

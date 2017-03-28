@@ -33,24 +33,21 @@ namespace {
 
   struct FooComp : public Component<FooComp> {
     int fakeA, fakeB;
-
     FooComp(int fakeA, int fakeB);
   };
   EZECS_COMPONENT_DEPENDENCIES(FooComp)
 
-  class BarComp : public Component<BarComp> {
+  class Bar_Comp : public Component<Bar_Comp> {
       float number;
-
-      BarComp(float number);
+      Bar_Comp(float number);
   };
-  EZECS_COMPONENT_DEPENDENCIES(BarComp, FooComp)
+  EZECS_COMPONENT_DEPENDENCIES(Bar_Comp, FooComp)
 
   struct MehComp : public Component<MehComp> {
     char boo, hoo;
-
     MehComp(char boo, char hoo);
   };
-  EZECS_COMPONENT_DEPENDENCIES(MehComp, FooComp, BarComp)
+  EZECS_COMPONENT_DEPENDENCIES(MehComp, FooComp, Bar_Comp)
 
   // END DECLARATIONS
 
@@ -59,7 +56,7 @@ namespace {
   FooComp::FooComp(int fakeA, int fakeB)
       : fakeA(fakeA), fakeB(fakeB) {}
 
-  BarComp::BarComp(float number)
+  Bar_Comp::Bar_Comp(float number)
       : number(number) {}
 
   MehComp::MehComp(char boo, char hoo)

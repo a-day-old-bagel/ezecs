@@ -39,6 +39,9 @@ namespace ezecs {
    * unsigned -1, or in other words, ALL has all the bits turned on.
    */
   
+  template<> compMask Component<Existence>::requiredComps = NONE;
+  template<> compMask Component<Existence>::dependentComps = ALL & ~EXISTENCE;
+  template<> compMask Component<Existence>::flag = EXISTENCE;
   // COMPONENT DEPENDENCY FIELD DEFINITIONS APPEAR HERE
   
   /*
@@ -74,6 +77,18 @@ namespace ezecs {
    * compMask getRequiredComps(int compType);
    * compMask getDependentComps(int compType);
    */
-  
-  // COMPONENT DEPENDENCY FIELD GETTER DEFINITIONS APPEAR HERE
+  compMask getRequiredComps(int compType) {
+    switch(compType) {
+      case EXISTENCE: return Existence::requiredComps;
+      // COMPONENT REQUIREMENTS GETTER CASES APPEAR HERE
+      default: return ALL;
+    }
+  }
+  compMask getDependentComps(int compType) {
+    switch(compType) {
+      case EXISTENCE: return Existence::dependentComps;
+      // COMPONENT DEPENDENTS GETTER CASES APPEAR HERE
+      default: return ALL;
+    }
+  }
 }

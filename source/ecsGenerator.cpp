@@ -14,23 +14,75 @@
 using namespace std;
 
 /*
+ * This converts a given component type name into an enumerator name.
+ */
+string enumStringIzer(const string& compType) {
+  string result = compType;
+  transform(result.begin(), result.end(), result.begin(), ::toupper);
+  return result;
+}
+
+/*
+ * This converts a given component type name into the private portions of the declarations of that component's
+ * collection, collection manipulator methods, and callback structures.
+ */
+string collStringIzer_private(const string& compType) {
+  stringstream result;
+  result << TAB TAB TAB "KvMap<entityId, " << compType << "> comps_" << compType << ";" << endl;
+  result << TAB TAB TAB "std::vector<EntNotifyDelegate> addCallbacks_" << compType << ";" << endl;
+  result << TAB TAB TAB "std::vector<EntNotifyDelegate> remCallbacks_" << compType << ";" << endl;
+  return result.str();
+}
+
+/*
+ * This converts a given component type name and constructor arguments into the public portions of the declarations of
+ * that component's collection, collection manipulator methods, and callback registration methods.
+ */
+string collStringIzer_public(const string& compType, const string& compArgs) {
+  stringstream result;
+  result << TAB TAB TAB "CompOpReturn add" << compType << "(const entityId& id, " << compArgs << ");" << endl;
+  result << TAB TAB TAB "CompOpReturn rem" << compType << "(const entityId& id);" << endl;
+  result << TAB TAB TAB "CompOpReturn get" << compType << "(const entityId& id, " << compType << "** out);" << endl;
+  result << TAB TAB TAB "void registerAddCallback_" << compType << "(EntNotifyDelegate& dlgt);" << endl;
+  result << TAB TAB TAB "void registerRemCallback_" << compType << "(EntNotifyDelegate& dlgt);" << endl;
+  return result.str();
+}
+
+/*
  * This holds everything we need to know about a component type in order to generate all the associated code.
  */
 struct CompType {
   string name = "";
+  string constructorArgs, enumName, stateH_prv, stateH_pub;
   vector<string> prerequisiteComps;
   vector<string> dependentComps;
-  vector<string> constructorArgs;
+  
+  void resolveNameBasedStrings() {
+    enumName = enumStringIzer(name);
+    stateH_prv = collStringIzer_private(name);
+    stateH_pub = collStringIzer_public(name, constructorArgs);
+  }
 };
 
 /*
- * This holds information gathered from the users calls to the EZECS_COMPONENT_DEPENDENCIES macro
+ * Just a helper function to count character occurrences in a string
  */
-struct CompDepEntry {
-  string dependent = "";
-  vector<string> prerequisites;
-  string code;
-};
+unsigned long occurrences(const string& s, const char c) {
+  unsigned long i = 0, count = 0, contain;
+  while((contain = s.find(c,i)) != string::npos){
+    count++;
+    i = contain + 1;
+  }
+  return count;
+}
+
+/*
+ * A helper to keep track of how many lines of code have been inserted using regex_replace
+ */
+string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& count) {
+  count += occurrences(reStr, '\n');
+  return regex_replace(inStr, rx, reStr);
+}
 
 /*
  * This is called by CMake
@@ -144,20 +196,47 @@ int main(int argc, char *argv[]) {
          << " Make sure that comment exists and is formatted and placed correctly." << endl;
     return 1;
   }
+  
+  /*
+   * C-string versions of the above strings we just found
+   */
+  const char* decls = code_confDecls.c_str();
+  const char* defns = code_confDefns.c_str();
 
   /*
    * compTypes will have keys that are component type names and values that are CompType (component type descriptions)
+   * compTypeNames is just a vector of all of their names.
    */
   unordered_map<string, CompType> compTypes;
+  vector<string> compTypeNames;
 
-  // Fill compTypes with the user's component types from the config file (just find the name of each one)
+  // Fill compTypes' 'name' fields with the user's component type names from the config file.
   regex rx_confCompDecls("(?:class|struct)\\s*(\\w*)\\s*:\\s*public\\s*Component\\s*<\\s*\\w*\\s*>");
-  for (auto it = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCompDecls); it != cregex_iterator(); ++it) {
+  for (auto it = cregex_iterator(decls, decls + strlen(decls), rx_confCompDecls); it != cregex_iterator(); ++it) {
     cmatch match = *it;
     compTypes[match[1].str()] = { match[1].str() };
+    compTypeNames.push_back(match[1].str());
   }
-
-  // Fill compType's 'prerequisiteComps' fields given the user's calls to the EZECS_COMPONENT_DEPENDENCIES macro
+  
+  // Fill out compTypes' constructorArgs fields using those names, and then fill all the fields we can at this point.
+  for (auto name : compTypeNames) {
+    stringstream regexBuilder;
+    regexBuilder << name << "\\s*::\\s*" << name;
+    regexBuilder << "\\s*\\(\\s*((?:\\w+\\s+\\w+(?:\\s*,\\s*\\w+\\s+\\w+)*)?)\\s*\\)";
+    regex rx_confCompCnstrctr(regexBuilder.str());
+    auto it = cregex_iterator(defns, defns + strlen(defns), rx_confCompCnstrctr);
+    if (it != cregex_iterator()) {
+      cmatch match = *it;
+      compTypes.at(name).constructorArgs = match[1].str();
+      compTypes.at(name).resolveNameBasedStrings();
+    } else {
+      cerr << "Could not find constructor definition for " << name <<"! Make sure there is an explicit definition "
+           << "inside the DEFINITIONS secion of your config file." << endl;
+      return 1;
+    }
+  }
+  
+  // Fill compTypes' 'prerequisiteComps' fields given the user's calls to the EZECS_COMPONENT_DEPENDENCIES macro
   regex rx_confCompDep("EZECS_COMPONENT_DEPENDENCIES\\s*\\((\\s*\\w*(?:\\s*,\\s*\\w+\\s*)*\\s*)\\)");
   for (auto it = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCompDep); it != cregex_iterator(); ++it) {
     cmatch match = *it;
@@ -190,94 +269,179 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // Fill compType's 'dependentComps' fields given the now-filled 'prerequisiteComps' fields
-  for (auto compType : compTypes) {
-    for (auto preq : compType.second.prerequisiteComps) {
-      compTypes.at(preq).dependentComps.push_back(compType.second.name);
+  // Fill compTypes' 'dependentComps' fields given the now-filled 'prerequisiteComps' fields
+  for (auto name : compTypeNames) {
+    for (auto preq : compTypes.at(name).prerequisiteComps) {
+      compTypes.at(preq).dependentComps.push_back(name);
     }
   }
 
 
 
+  // Debug components TODO: remove this section
   stringstream ss_compTypeList;
-  for (auto type : compTypes) {
-    cout << type.first << " (";
-    for (auto preq : type.second.prerequisiteComps) {
-      cout << preq << (preq == type.second.prerequisiteComps.back() ? "" : ", ");
+  for (auto name : compTypeNames) {
+    cout << name << " (";
+    for (auto preq : compTypes.at(name).prerequisiteComps) {
+      cout << preq << (preq == compTypes.at(name).prerequisiteComps.back() ? "" : ", ");
     }
     cout << ") (";
-    for (auto depn : type.second.dependentComps) {
-      cout << depn << (depn == type.second.dependentComps.back() ? "" : ", ");
+    for (auto depn : compTypes.at(name).dependentComps) {
+      cout << depn << (depn == compTypes.at(name).dependentComps.back() ? "" : ", ");
     }
-    cout << ")" << endl;
-    ss_compTypeList << TAB "// " << type.first << endl;
+    cout << ") | " << compTypes.at(name).enumName << " | (" << compTypes.at(name).constructorArgs << ")" << endl;
+    ss_compTypeList << TAB "// " << name << endl;
   }
   string str_compTypeList = ss_compTypeList.str();
   cout << endl;
 
+  
+  
+  
+  // Build the string that goes in the component enumerators spot
+  stringstream ss_code_compEnum;
+  int i = 0;
+  for (auto name : compTypeNames) {
+    ss_code_compEnum << TAB TAB << compTypes.at(name).enumName << " = 1 << " << ++i << "," << endl;
+  }
+  string code_compEnum = ss_code_compEnum.str();
+  
+  // Build the string that declares the number of user-made components
+  stringstream ss_code_numComps;
+  ss_code_numComps << TAB "const uint8_t numCompTypes = " << i << ";" << endl;
+  string code_numComps = ss_code_numComps.str();
+  
+  // Build the string that defines the component dependency relationships
+  stringstream ss_code_compDepends;
+  for (auto name : compTypeNames) {
+    // required comps
+    string requiredComps;
+    stringstream ss_requiredComps;
+    ss_requiredComps << enumStringIzer("Existence");
+    for (auto comp : compTypes.at(name).prerequisiteComps) {
+      ss_requiredComps << " | " << compTypes.at(comp).enumName;
+    }
+    requiredComps = ss_requiredComps.str();
+    ss_code_compDepends << endl << TAB "template<> compMask Component<" << name << ">::requiredComps = "
+                        << requiredComps << ";" << endl;
 
+    // dependent comps
+    string dependentComps;
+    if (compTypes.at(name).dependentComps.empty()) {
+      dependentComps = "NONE";
+    } else {
+      stringstream ss_dependentComps;
+      for (auto comp : compTypes.at(name).dependentComps) {
+        ss_dependentComps << compTypes.at(comp).enumName
+                          << (comp == compTypes.at(name).dependentComps.back() ? "" : " | ");
+      }
+      dependentComps = ss_dependentComps.str();
+    }
+    ss_code_compDepends << TAB "template<> compMask Component<" << name << ">::dependentComps = "
+                        << dependentComps << ";" << endl;
 
+    // self flag
+    ss_code_compDepends << TAB "template<> compMask Component<" << name << ">::flag = "
+                        << compTypes.at(name).enumName << ";" << endl;
+  }
+  string code_compDepends = ss_code_compDepends.str();
+  
+  // Build the strings that are used in the component dependency getter switch-case statements
+  stringstream ss_code_compGetReq;
+  stringstream ss_code_compGetDep;
+  for (auto name : compTypeNames) {
+    ss_code_compGetReq << TAB TAB TAB "case " << compTypes.at(name).enumName << ": return "
+                       << name << "::requiredComps;" << endl;
+    ss_code_compGetDep << TAB TAB TAB "case " << compTypes.at(name).enumName << ": return "
+                       << name << "::dependentComps;" << endl;
+  }
+  string code_compGetReq = ss_code_compGetReq.str();
+  string code_compGetDep = ss_code_compGetDep.str();
+  
+  // Build the string that declares collections, methods, and stuff in ecsState.generated.hpp
+  stringstream ss_code_stateHOut;
+  for (auto name : compTypeNames) {
+    ss_code_stateHOut << compTypes.at(name).stateH_prv << endl;
+  }
+  ss_code_stateHOut << TAB TAB << endl << "public:" << endl;
+  for (auto name : compTypeNames) {
+    ss_code_stateHOut << endl << compTypes.at(name).stateH_pub;
+  }
+  string code_stateHOut = ss_code_stateHOut.str();
+  
 
+  
+  // keep count of lines generated
+  unsigned long lineCount = 0;
 
-  // replace "appears here" comments in the input file strings with code, write output file strings (next four sections)
+  // replace "appears here" comments in the input file strings with code (next four sections)
   regex rx_compDecls("  \\/\\/ COMPONENT DECLARATIONS APPEAR HERE");
   regex rx_compEnums("    \\/\\/ COMPONENT TYPE ENUMERATORS APPEAR HERE");
   regex rx_numCompTypes("  \\/\\/ NUMBER OF COMPONENT TYPES APPEARS HERE");
-  string str_compsHOut = regex_replace(str_compsHIn, rx_compDecls, TAB + code_confDecls);
-  str_compsHOut = regex_replace(str_compsHOut, rx_compEnums, str_compTypeList);
-  str_compsHOut = regex_replace(str_compsHOut, rx_numCompTypes, str_compTypeList);
+  string str_compsHOut = replaceAndCount(str_compsHIn, rx_compDecls, TAB + code_confDecls, lineCount);
+  str_compsHOut = replaceAndCount(str_compsHOut, rx_compEnums, code_compEnum, lineCount);
+  str_compsHOut = replaceAndCount(str_compsHOut, rx_numCompTypes, code_numComps, lineCount);
 
   regex rx_compDepDef("  \\/\\/ COMPONENT DEPENDENCY FIELD DEFINITIONS APPEAR HERE");
   regex rx_compMetDef("  \\/\\/ COMPONENT METHOD DEFINITIONS APPEAR HERE");
-  regex rx_compDepMutDef("  \\/\\/ COMPONENT DEPENDENCY FIELD GETTER DEFINITIONS APPEAR HERE");
-  string str_compsCOut = regex_replace(str_compsCIn, rx_compDepDef, str_compTypeList);
-  str_compsCOut = regex_replace(str_compsCOut, rx_compMetDef, TAB + code_confDefns);
-  str_compsCOut = regex_replace(str_compsCOut, rx_compDepMutDef, str_compTypeList);
+  regex rx_compGetReqDef("      \\/\\/ COMPONENT REQUIREMENTS GETTER CASES APPEAR HERE");
+  regex rx_compGetDepDef("      \\/\\/ COMPONENT DEPENDENTS GETTER CASES APPEAR HERE");
+  string str_compsCOut = replaceAndCount(str_compsCIn, rx_compDepDef, code_compDepends, lineCount);
+  str_compsCOut = replaceAndCount(str_compsCOut, rx_compMetDef, TAB + code_confDefns, lineCount);
+  str_compsCOut = replaceAndCount(str_compsCOut, rx_compGetReqDef, code_compGetReq, lineCount);
+  str_compsCOut = replaceAndCount(str_compsCOut, rx_compGetDepDef, code_compGetDep, lineCount);
 
   regex rx_compCollDecls("      \\/\\/ COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE");
-  string str_stateHOut = regex_replace(str_stateHIn, rx_compCollDecls, str_compTypeList);
+  string str_stateHOut = replaceAndCount(str_stateHIn, rx_compCollDecls, code_stateHOut, lineCount);
 
   regex rx_compClrLoop("    \\/\\/ A LOOP TO CLEAR ALL COMPONENTS APPEARS HERE");
   regex rx_compDelLoop("    \\/\\/ A LOOP TO DELETE ALL COMPONENTS APPEARS HERE");
   regex rx_compRegCllbks("    \\/\\/ CODE TO REGISTER THE APPROPRIATE CALLBACKS APPEARS HERE");
   regex rx_compCollDef("  \\/\\/ COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE");
-  string str_stateCOut = regex_replace(str_stateCIn, rx_compClrLoop, str_compTypeList);
-  str_stateCOut = regex_replace(str_stateCOut, rx_compDelLoop, str_compTypeList);
-  str_stateCOut = regex_replace(str_stateCOut, rx_compRegCllbks, str_compTypeList);
-  str_stateCOut = regex_replace(str_stateCOut, rx_compCollDef, str_compTypeList);
+  string str_stateCOut = replaceAndCount(str_stateCIn, rx_compClrLoop, str_compTypeList, lineCount);
+  str_stateCOut = replaceAndCount(str_stateCOut, rx_compDelLoop, str_compTypeList, lineCount);
+  str_stateCOut = replaceAndCount(str_stateCOut, rx_compRegCllbks, str_compTypeList, lineCount);
+  str_stateCOut = replaceAndCount(str_stateCOut, rx_compCollDef, str_compTypeList, lineCount);
+  
+  // report lines generated
+  cout << "LINES OF CODE GENERATED: " << lineCount << endl;
 
+  // make some file header intro text for header and source files (next two sections)
+  stringstream ss_hIntro;
+  ss_hIntro << "/*\n * EZECS - The E-Z Entity Component System\n * Header generated using " << argv[3] << "\n */\n\n";
+  string hppIntro = ss_hIntro.str();
+  
+  stringstream ss_cIntro;
+  ss_cIntro << "/*\n * EZECS - The E-Z Entity Component System\n * Source generated using " << argv[3] << "\n */\n\n";
+  string cppIntro = ss_cIntro.str();
+  
   // write the output file strings to the appropriate files (next four sections of code)
   ofstream compsHOut(fileName_compsHOut);
   if (!compsHOut) { return 1; }
-  compsHOut << "/*\n * EZECS - The E-Z Entity Component System\n * Header generated using " << argv[1] << "\n */\n\n";
-  compsHOut << str_compsHOut;
+  compsHOut << hppIntro << str_compsHOut;
   compsHOut.close();
 
   ofstream compsCOut(fileName_compsCOut);
   if (!compsCOut) { return 1; }
-  compsCOut << "/*\n * EZECS - The E-Z Entity Component System\n * Source generated using " << argv[1] << "\n */\n\n";
-  compsCOut << str_compsCOut;
+  compsCOut << cppIntro << str_compsCOut;
   compsCOut.close();
 
   ofstream stateHOut(fileName_stateHOut);
   if (!stateHOut) { return 1; }
-  stateHOut << "/*\n * EZECS - The E-Z Entity Component System\n * Header generated using " << argv[1] << "\n */\n\n";
-  stateHOut << str_stateHOut;
+  stateHOut << hppIntro << str_stateHOut;
   stateHOut.close();
 
   ofstream stateCOut(fileName_stateCOut);
   if (!stateCOut) { return 1; }
-  stateCOut << "/*\n * EZECS - The E-Z Entity Component System\n * Source generated using " << argv[1] << "\n */\n\n";
-  stateCOut << str_stateCOut;
+  stateCOut << cppIntro << str_stateCOut;
   stateCOut.close();
 
 
-  // Make some test files (temporary - erase later) TODO: erase this
+  // Make some test files (temporary - erase later) TODO: erase this (next two sections)
   string fileName_testHOut = binDir + "/test.generated.hpp";
   ofstream headerOut(fileName_testHOut);
   if (!headerOut) { return 1; }
-  headerOut << "/*\n * EZECS - The E-Z Entity Component System\n * Header generated using "
-            << argv[1] << "\n */\n\n"
+  headerOut << hppIntro
             << "#include <iostream>\n"
             << "namespace ezecs {\n"
             << TAB "void testFunction() {\n"
@@ -289,8 +453,7 @@ int main(int argc, char *argv[]) {
   string fileName_testCOut = binDir + "/test.generated.cpp";
   ofstream sourceOut(fileName_testCOut);
   if (!sourceOut) { return 1; }
-  sourceOut << "/*\n * EZECS - The E-Z Entity Component System\n * Source generated using "
-            << argv[1] << "\n */\n";
+  sourceOut << cppIntro;
   sourceOut.close();
 
   return 0;

@@ -9,9 +9,15 @@
 #include <vector>
 #include <unordered_map>
 
-#define TAB "  "
-
 using namespace std;
+
+#define TAB "  "
+const string pathSeperator =
+#ifdef _WIN32
+"\\";
+#else
+"/";
+#endif
 
 /*
  * This converts a given component type name into an enumerator name.
@@ -85,56 +91,60 @@ string replaceAndCount(const string& inStr, const regex& rx, const string& reStr
 }
 
 /*
- * This is called by CMake
+ * main is called by CMake
+ * It takes an input directory, an output directory, and a configuration file.
  */
 int main(int argc, char *argv[]) {
   // CMake should provide exactly 3 arguments after the command name (4 total).
-  if (argc < 4) { return 1; }
+  if (argc < 4) {
+    cerr << "ecsGenerator: Did not receive correct number of arguments." << endl;
+    return -1;
+  }
 
   // set up all file names for reading and writing
   string sourceDir = argv[1];
   string binDir = argv[2];
   string fileName_configIn = argv[3];
-  string fileName_compsHIn = sourceDir + "/ecsComponents.hpp";
-  string fileName_compsCIn = sourceDir + "/ecsComponents.cpp";
-  string fileName_compsHOut = binDir + "/ecsComponents.generated.hpp";
-  string fileName_compsCOut = binDir + "/ecsComponents.generated.cpp";
-  string fileName_stateHIn = sourceDir + "/ecsState.hpp";
-  string fileName_stateCIn = sourceDir + "/ecsState.cpp";
-  string fileName_stateHOut = binDir + "/ecsState.generated.hpp";
-  string fileName_stateCOut = binDir + "/ecsState.generated.cpp";
+  string fileName_compsHIn = sourceDir + pathSeperator + "ecsComponents.hpp";
+  string fileName_compsCIn = sourceDir + pathSeperator + "ecsComponents.cpp";
+  string fileName_compsHOut = binDir + pathSeperator + "ecsComponents.generated.hpp";
+  string fileName_compsCOut = binDir + pathSeperator + "ecsComponents.generated.cpp";
+  string fileName_stateHIn = sourceDir + pathSeperator + "ecsState.hpp";
+  string fileName_stateCIn = sourceDir + pathSeperator + "ecsState.cpp";
+  string fileName_stateHOut = binDir + pathSeperator + "ecsState.generated.hpp";
+  string fileName_stateCOut = binDir + pathSeperator + "ecsState.generated.cpp";
 
   // read in and store all input files (next five sections of code)
   ifstream configIn(fileName_configIn);
-  if (!configIn) { return 1; }
+  if (!configIn) { return -2; }
   stringstream ss_configIn;
   ss_configIn << configIn.rdbuf();
   string str_configIn(ss_configIn.str());
   configIn.close();
 
   ifstream compsHIn(fileName_compsHIn);
-  if (!compsHIn) { return 1; }
+  if (!compsHIn) { return -3; }
   stringstream ss_compsHIn;
   ss_compsHIn << compsHIn.rdbuf();
   string str_compsHIn(ss_compsHIn.str());
   compsHIn.close();
 
   ifstream compsCIn(fileName_compsCIn);
-  if (!compsCIn) { return 1; }
+  if (!compsCIn) { return -4; }
   stringstream ss_compsCIn;
   ss_compsCIn << compsCIn.rdbuf();
   string str_compsCIn(ss_compsCIn.str());
   compsCIn.close();
 
   ifstream stateHIn(fileName_stateHIn);
-  if (!stateHIn) { return 1; }
+  if (!stateHIn) { return -5; }
   stringstream ss_stateHIn;
   ss_stateHIn << stateHIn.rdbuf();
   string str_stateHIn(ss_stateHIn.str());
   stateHIn.close();
 
   ifstream stateCIn(fileName_stateCIn);
-  if (!stateCIn) { return 1; }
+  if (!stateCIn) { return -6; }
   stringstream ss_stateCIn;
   ss_stateCIn << stateCIn.rdbuf();
   string str_stateCIn(ss_stateCIn.str());
@@ -148,16 +158,16 @@ int main(int argc, char *argv[]) {
 
   // Get the entire block of code comprising the component declarations and definitions from the config file
   string code_confAll;
-  regex rx_confCodeAll("\\/\\/\\s*BEGIN\\s*DECLARATIONS\\s*((?:.|\\s*)*)");
+  regex rx_confCodeAll("\\/\\/\\s*BEGIN\\s*DECLARATIONS\\s*");
   const char *confIn = str_configIn.c_str();
   auto rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeAll);
   if (rxit != cregex_iterator()) {
     cmatch match = *rxit;
-    code_confAll = match[1].str();
+    code_confAll = str_configIn.substr((size_t)match.position() + match.length(), str_configIn.length());
   } else {
     cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN DECLARATIONS' :"
          << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return 1;
+    return -7;
   }
 
   // Get just the declarations section of the config file code
@@ -170,10 +180,10 @@ int main(int argc, char *argv[]) {
   } else {
     cerr << "Parsing provided ezecs config file: Could not identify comment '// END DECLARATIONS' :"
          << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return 1;
+    return -8;
   }
 
-  // Get just the definitions section of the config file code
+  // Get just the definitions section of the config file code (then cut off the trailing unrelated code)
   string code_confDefnsDirty;
   regex rx_confCodeBegDefn("\\/\\/\\s*BEGIN\\s*DEFINITIONS\\s*");
   rxit = cregex_iterator(confDecls, confDecls + strlen(confDecls), rx_confCodeBegDefn);
@@ -183,7 +193,7 @@ int main(int argc, char *argv[]) {
   } else {
     cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN DEFINITIONS' :"
          << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return 1;
+    return -9;
   }
   regex rx_confCodeEndDefn("\\s*\\/\\/\\s*END\\s*DEFINITIONS");
   const char* confDefnsDirty = code_confDefnsDirty.c_str();
@@ -194,7 +204,7 @@ int main(int argc, char *argv[]) {
   } else {
     cerr << "Parsing provided ezecs config file: Could not identify comment '// END DEFINITIONS' :"
          << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return 1;
+    return -10;
   }
   
   /*
@@ -232,7 +242,7 @@ int main(int argc, char *argv[]) {
     } else {
       cerr << "Could not find constructor definition for " << name <<"! Make sure there is an explicit definition "
            << "inside the DEFINITIONS secion of your config file." << endl;
-      return 1;
+      return -11;
     }
   }
   
@@ -255,7 +265,7 @@ int main(int argc, char *argv[]) {
           compType = &compTypes.at(token);
         } catch (...) {
           cerr << "Invalid use of EZECS_COMPONENT_DEPENDENCIES (invalid first arg given: '" << token << "')" << endl;
-          return 1;
+          return -12;
         }
       } else {
         if (compTypes.count(token)) {
@@ -263,7 +273,7 @@ int main(int argc, char *argv[]) {
         } else {
           cerr << "Invalid use of EZECS_COMPONENT_DEPENDENCIES (first arg: '" << compType->name
                << "'. invalid arg given: '" << token << "'.)" << endl;
-          return 1;
+          return -13;
         }
       }
     }
@@ -417,22 +427,22 @@ int main(int argc, char *argv[]) {
   
   // write the output file strings to the appropriate files (next four sections of code)
   ofstream compsHOut(fileName_compsHOut);
-  if (!compsHOut) { return 1; }
+  if (!compsHOut) { return -14; }
   compsHOut << hppIntro << str_compsHOut;
   compsHOut.close();
 
   ofstream compsCOut(fileName_compsCOut);
-  if (!compsCOut) { return 1; }
+  if (!compsCOut) { return -15; }
   compsCOut << cppIntro << str_compsCOut;
   compsCOut.close();
 
   ofstream stateHOut(fileName_stateHOut);
-  if (!stateHOut) { return 1; }
+  if (!stateHOut) { return -16; }
   stateHOut << hppIntro << str_stateHOut;
   stateHOut.close();
 
   ofstream stateCOut(fileName_stateCOut);
-  if (!stateCOut) { return 1; }
+  if (!stateCOut) { return -17; }
   stateCOut << cppIntro << str_stateCOut;
   stateCOut.close();
 
@@ -440,7 +450,7 @@ int main(int argc, char *argv[]) {
   // Make some test files (temporary - erase later) TODO: erase this (next two sections)
   string fileName_testHOut = binDir + "/test.generated.hpp";
   ofstream headerOut(fileName_testHOut);
-  if (!headerOut) { return 1; }
+  if (!headerOut) { return -18; }
   headerOut << hppIntro
             << "#include <iostream>\n"
             << "namespace ezecs {\n"
@@ -452,7 +462,7 @@ int main(int argc, char *argv[]) {
 
   string fileName_testCOut = binDir + "/test.generated.cpp";
   ofstream sourceOut(fileName_testCOut);
-  if (!sourceOut) { return 1; }
+  if (!sourceOut) { return -19; }
   sourceOut << cppIntro;
   sourceOut.close();
 

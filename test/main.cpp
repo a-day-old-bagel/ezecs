@@ -26,7 +26,7 @@
 using namespace ezecs;
 
 class TestSystem : public System<TestSystem> {
-    friend class System;
+    template<typename Anything> friend class System;
     std::vector<compMask> requiredComponents = {
         EXISTENCE
     };

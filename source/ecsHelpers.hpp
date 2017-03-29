@@ -26,11 +26,11 @@
 #include <string>
 #include "ecsState.generated.hpp"
 
-#define _FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define ECS_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
-#define ECS_ERR_MSG(res, msg) EcsResult(_FILENAME, __LINE__, res, msg)
-#define ECS_ERR(res) EcsResult(_FILENAME, __LINE__, res)
-#define ECS_MSG(msg) EcsResult(_FILENAME, __LINE__, -1, msg)
+#define ECS_ERR_MSG(res, msg) EcsResult(ECS_FILENAME, __LINE__, res, msg)
+#define ECS_ERR(res) EcsResult(ECS_FILENAME, __LINE__, res)
+#define ECS_MSG(msg) EcsResult(ECS_FILENAME, __LINE__, -1, msg)
 #define ECS_SUCCESS EcsResult();
 
 #define ECS_CHECK_ERR_MSG(res, msg) if (res != SUCCESS) return ECS_ERR_MSG(res, msg)

@@ -99,6 +99,11 @@ namespace ezecs {
       void registerRemCallback_Existence (EntNotifyDelegate& dlgt);
        
       // COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE
+
+      /*
+       * Returns the address of the component collection for a given component type.
+       */
+      inline void* getCollAddr(const compMask type);
     
     public:
       
@@ -138,7 +143,7 @@ namespace ezecs {
       std::stack<entityId> freedIds;
       
       /*
-       * These are used by the component collection manipulation methods
+       * The following is used by the component collection manipulation methods
        */
       template<typename compType, typename ... types>
       CompOpReturn addComp(KvMap<entityId, compType>& coll, const entityId& id,
@@ -149,6 +154,9 @@ namespace ezecs {
       
       template<typename compType>
       CompOpReturn getComp(KvMap<entityId, compType>& coll, const entityId& id, compType** out);
+
+      bool shouldFireRemovalDlgt(const compMask& likeness, const compMask& current, const compMask& typeRemoved);
+      bool shouldFireAdditionDlgt(const compMask& likeness, const compMask& current, const compMask& typeAdded);
   };
   
 }

@@ -24,6 +24,15 @@
 #include "ecsState.generated.hpp"
 
 namespace ezecs {
+
+  inline void* State::getCollAddr(const compMask type) {
+    switch (type) {
+      case EXISTENCE: return (void*)&comps_Existence;
+      // COLLECTION ADDRESS GETTER CASES APPEAR HERE
+      default: return NULL;
+    }
+  }
+
   CompOpReturn State::createEntity(entityId *newId) {
     entityId id;
     if (freedIds.empty()) {
@@ -97,8 +106,8 @@ namespace ezecs {
 
   template<typename compType>
   CompOpReturn State::remComp(KvMap<entityId, compType>& coll, const entityId& id, const EntNotifyDelegates& callbacks) {
-    if (coll.count(id)) {
-      if (comps_Existence.count(id)) {
+    if (comps_Existence.count(id)) {
+      if (coll.count(id)) {
         Existence* existence = &comps_Existence.at(id);
         if (existence->passesDependenciesForRemoval(compType::dependentComps)) {
           if ((void*)&coll != (void*)&comps_Existence) {
@@ -114,9 +123,9 @@ namespace ezecs {
         }
         return DEPEND_FAIL;
       }
-      return NONEXISTENT_ENT;
+      return NONEXISTENT_COMP;
     }
-    return NONEXISTENT_COMP;
+    return NONEXISTENT_ENT;
   }
 
   template<typename compType>
@@ -126,6 +135,23 @@ namespace ezecs {
       return SUCCESS;
     }
     return NONEXISTENT_COMP;
+  }
+
+  bool State::shouldFireRemovalDlgt(const compMask& likeness, const compMask& current, const compMask& typeRemoved) {
+    if (likeness & current == likeness) {
+      if (likeness & ~typeRemoved != likeness) {
+        return true;
+      }
+    }
+    return false;
+  }
+  bool State::shouldFireAdditionDlgt(const compMask& likeness, const compMask& current, const compMask& typeAdded) {
+    if (likeness & current != likeness) {
+      if (likeness & (current | typeAdded) == likeness) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /*

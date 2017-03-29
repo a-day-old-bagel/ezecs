@@ -26,9 +26,8 @@
 using namespace ezecs;
 
 class TestSystem : public System<TestSystem> {
-    template<typename Anything> friend class System;
     std::vector<compMask> requiredComponents = {
-        EXISTENCE
+        EXISTENCE, FOOCOMP, BAR_COMP
     };
   public:
     TestSystem(State* state) : System(state) {

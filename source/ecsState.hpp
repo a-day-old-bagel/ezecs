@@ -45,13 +45,14 @@ namespace ezecs {
    * are returned by all public accessors and mutators of EcsState
    */
   enum CompOpReturn {
-    SUCCESS,
+    SUCCESS = 0,
     NONEXISTENT_ENT,
     NONEXISTENT_COMP,
     REDUNDANT,
     PREREQ_FAIL,
     DEPEND_FAIL,
     MAX_ID_REACHED,
+    SOMETHING_REALLY_BAD,
   };
   
   /**
@@ -90,21 +91,10 @@ namespace ezecs {
        */
 
       KvMap<entityId, Existence> comps_Existence;
-      std::vector<EntNotifyDelegate> addCallbacks_Existence;
-      std::vector<EntNotifyDelegate> remCallbacks_Existence;
-      CompOpReturn addExistence(const entityId& id);
-      CompOpReturn remExistence(const entityId& id);
       CompOpReturn getExistence(const entityId& id, Existence** out);
-      void registerAddCallback_Existence (EntNotifyDelegate& dlgt);
-      void registerRemCallback_Existence (EntNotifyDelegate& dlgt);
        
       // COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE
 
-      /*
-       * Returns the address of the component collection for a given component type.
-       */
-      inline void* getCollAddr(const compMask type);
-    
     public:
       
       /**
@@ -137,26 +127,39 @@ namespace ezecs {
        */
       void listenForLikeEntities(const compMask& likeness,
                                  EntNotifyDelegate&& additionDelegate, EntNotifyDelegate&& removalDelegate);
+
+      /**
+       * Use to get which components currently exist at an id (as a mask)
+       * @param id
+       * @return a component mask, or zero (NONE) if the entity does not exist
+       */
+       compMask getComponents(const entityId& id);
     
     private:
       entityId nextId = 0;
       std::stack<entityId> freedIds;
       
       /*
-       * The following is used by the component collection manipulation methods
+       * The rest of this stuff is used by the public component collection manipulation methods
        */
       template<typename compType, typename ... types>
-      CompOpReturn addComp(KvMap<entityId, compType>& coll, const entityId& id,
-                           const EntNotifyDelegates& callbacks, const types& ... args);
-      
+      inline CompOpReturn addCompNoChecks(KvMap<entityId, compType>& coll, Existence* existence,
+                          const entityId& id, const EntNotifyDelegates& callbacks, const types& ... args);
       template<typename compType>
-      CompOpReturn remComp(KvMap<entityId, compType>& coll, const entityId& id, const EntNotifyDelegates& callbacks);
-      
-      template<typename compType>
-      CompOpReturn getComp(KvMap<entityId, compType>& coll, const entityId& id, compType** out);
+      inline CompOpReturn remCompNoChecks(KvMap<entityId, compType>& coll, Existence* existence,
+                          const entityId& id, const EntNotifyDelegates& callbacks);
 
-      bool shouldFireRemovalDlgt(const compMask& likeness, const compMask& current, const compMask& typeRemoved);
-      bool shouldFireAdditionDlgt(const compMask& likeness, const compMask& current, const compMask& typeAdded);
+      template<typename compType, typename ... types>
+      inline CompOpReturn addComp(KvMap<entityId, compType>& coll, const entityId& id,
+                           const EntNotifyDelegates& callbacks, const types& ... args);
+      template<typename compType>
+      inline CompOpReturn remComp(KvMap<entityId, compType>& coll, const entityId& id,
+                                  const EntNotifyDelegates& callbacks);
+      template<typename compType>
+      inline CompOpReturn getComp(KvMap<entityId, compType>& coll, const entityId& id, compType** out);
+
+      inline bool shouldFireRemovalDlgt(const compMask& likeness, const compMask& current, const compMask& typeRemoved);
+      inline bool shouldFireAdditionDlgt(const compMask& likeness, const compMask& current, const compMask& typeAdded);
   };
   
 }

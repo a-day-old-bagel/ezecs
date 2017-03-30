@@ -25,14 +25,6 @@
 
 namespace ezecs {
 
-  inline void* State::getCollAddr(const compMask type) {
-    switch (type) {
-      case EXISTENCE: return (void*)&comps_Existence;
-      // COLLECTION ADDRESS GETTER CASES APPEAR HERE
-      default: return NULL;
-    }
-  }
-
   CompOpReturn State::createEntity(entityId *newId) {
     entityId id;
     if (freedIds.empty()) {
@@ -59,45 +51,74 @@ namespace ezecs {
     }
     
     // A LOOP TO CLEAR ALL COMPONENTS APPEARS HERE
-    
+
+    if (existence->componentsPresent != Existence::flag) {
+      return SOMETHING_REALLY_BAD;
+    }
     return SUCCESS;
   }
 
   CompOpReturn State::deleteEntity(const entityId& id) {
-    Existence* existence;
-    CompOpReturn status = getExistence(id, &existence);
-    if (status != SUCCESS) {
-      return NONEXISTENT_ENT; // only fail status possible here indicates no existence component, hence no entity.
+    CompOpReturn cleared = clearEntity(id);
+    if (cleared != SUCCESS) {
+      return cleared;
     }
-    
-    // A LOOP TO DELETE ALL COMPONENTS APPEARS HERE
-    
+    comps_Existence.erase(id);
     freedIds.push(id);
     return SUCCESS;
   }
 
   void State::listenForLikeEntities(const compMask& likeness,
-                                    EntNotifyDelegate&& additionDelegate, EntNotifyDelegate&& removalDelegate) {
-    
+                                    EntNotifyDelegate&& additionDelegate, EntNotifyDelegate&& removalDelegate)
+  {
     // CODE TO REGISTER THE APPROPRIATE CALLBACKS APPEARS HERE
   }
 
+  compMask State::getComponents(const entityId& id) {
+    Existence* existence;
+    if (getExistence(id, &existence) == SUCCESS) {
+      return existence->componentsPresent;
+    }
+    return NONEXISTENT_ENT;
+  }
+
   template<typename compType, typename ... types>
-  CompOpReturn State::addComp(KvMap<entityId, compType>& coll, const entityId& id,
-                                 const EntNotifyDelegates& callbacks, const types &... args) {
+  inline CompOpReturn State::addCompNoChecks(KvMap<entityId, compType>& coll, Existence* existence,
+                             const entityId& id, const EntNotifyDelegates& callbacks, const types& ... args)
+  {
+    if (coll.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(args...))) {
+      existence->turnOnFlags(compType::flag);
+      for (auto dlgt : callbacks) {
+        if (shouldFireAdditionDlgt(dlgt.likeness, existence->componentsPresent, compType::flag)) {
+          dlgt.fire(id);
+        }
+      }
+      return SUCCESS;
+    }
+    return REDUNDANT;
+  }
+  template<typename compType>
+  inline CompOpReturn State::remCompNoChecks(KvMap<entityId, compType>& coll, Existence* existence,
+                                                      const entityId& id, const EntNotifyDelegates& callbacks)
+  {
+    for (auto dlgt : callbacks) {
+      if (shouldFireRemovalDlgt(dlgt.likeness, existence->componentsPresent, compType::flag)) {
+        dlgt.fire(id);
+      }
+    }
+    coll.erase(id);
+    existence->turnOffFlags(compType::flag);
+    return SUCCESS;
+  }
+
+  template<typename compType, typename ... types>
+  inline CompOpReturn State::addComp(KvMap<entityId, compType>& coll, const entityId& id,
+                                 const EntNotifyDelegates& callbacks, const types &... args)
+  {
     if (comps_Existence.count(id)) {
       Existence* existence = &comps_Existence.at(id);
       if (existence->passesPrerequisitesForAddition(compType::requiredComps)) {
-        if (coll.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(args...))) {
-          existence->turnOnFlags(compType::flag);
-          for (auto dlgt : callbacks) { // TODO: This logic seems wrong
-            if ((comps_Existence.at(id).componentsPresent & dlgt.likeness) == dlgt.likeness) {
-              dlgt.fire(id);
-            }
-          }
-          return SUCCESS;
-        }
-        return REDUNDANT;
+        return addCompNoChecks(coll, existence, id, callbacks, args...);
       }
       return PREREQ_FAIL;
     }
@@ -105,21 +126,14 @@ namespace ezecs {
   }
 
   template<typename compType>
-  CompOpReturn State::remComp(KvMap<entityId, compType>& coll, const entityId& id, const EntNotifyDelegates& callbacks) {
+  inline CompOpReturn State::remComp(KvMap<entityId, compType>& coll, const entityId& id,
+                                     const EntNotifyDelegates& callbacks)
+  {
     if (comps_Existence.count(id)) {
       if (coll.count(id)) {
         Existence* existence = &comps_Existence.at(id);
         if (existence->passesDependenciesForRemoval(compType::dependentComps)) {
-          if ((void*)&coll != (void*)&comps_Existence) {
-            comps_Existence.at(id).turnOffFlags(compType::flag);
-          }
-          coll.erase(id);
-          for (auto dlgt : callbacks) {  // TODO: This logic seems wrong
-            if ((comps_Existence.at(id).componentsPresent & dlgt.likeness) != dlgt.likeness) {
-              dlgt.fire(id);
-            }
-          }
-          return SUCCESS;
+          return remCompNoChecks(coll, existence, id, callbacks);
         }
         return DEPEND_FAIL;
       }
@@ -129,7 +143,7 @@ namespace ezecs {
   }
 
   template<typename compType>
-  CompOpReturn State::getComp(KvMap<entityId, compType> &coll, const entityId& id, compType** out) {
+  inline CompOpReturn State::getComp(KvMap<entityId, compType> &coll, const entityId& id, compType** out) {
     if (coll.count(id)) {
       *out = &coll.at(id);
       return SUCCESS;
@@ -137,7 +151,9 @@ namespace ezecs {
     return NONEXISTENT_COMP;
   }
 
-  bool State::shouldFireRemovalDlgt(const compMask& likeness, const compMask& current, const compMask& typeRemoved) {
+  inline bool State::shouldFireRemovalDlgt(const compMask& likeness, const compMask& current,
+                                           const compMask& typeRemoved)
+  {
     if (likeness & current == likeness) {
       if (likeness & ~typeRemoved != likeness) {
         return true;
@@ -145,7 +161,9 @@ namespace ezecs {
     }
     return false;
   }
-  bool State::shouldFireAdditionDlgt(const compMask& likeness, const compMask& current, const compMask& typeAdded) {
+  inline bool State::shouldFireAdditionDlgt(const compMask& likeness, const compMask& current,
+                                            const compMask& typeAdded)
+  {
     if (likeness & current != likeness) {
       if (likeness & (current | typeAdded) == likeness) {
         return true;
@@ -157,11 +175,7 @@ namespace ezecs {
   /*
    * Component collection manipulation method definitions
    */
-  CompOpReturn State::addExistence(const entityId& id ) { return addComp(comps_Existence, id, addCallbacks_Existence); }
-  CompOpReturn State::remExistence(const entityId& id) { return remComp(comps_Existence, id, remCallbacks_Existence); }
   CompOpReturn State::getExistence(const entityId& id, Existence** out) { return getComp(comps_Existence, id, out); }
-  void State::registerAddCallback_Existence (EntNotifyDelegate& dlgt) { addCallbacks_Existence.push_back(dlgt); }
-  void State::registerRemCallback_Existence (EntNotifyDelegate& dlgt) { remCallbacks_Existence.push_back(dlgt); }
   
   // COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE
   

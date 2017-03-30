@@ -50,11 +50,11 @@ namespace ezecs {
   bool Existence::flagIsOn(int compType) {
     return (compType & componentsPresent) != NONE;
   }
-  bool Existence::passesPrerequisitesForAddition(compMask mask) {
-    return (mask & componentsPresent) == mask;
+  bool Existence::passesPrerequisitesForAddition(compMask requiredComps) {
+    return (requiredComps & componentsPresent) == requiredComps;
   }
-  bool Existence::passesDependenciesForRemoval(compMask mask) {
-    return (mask & componentsPresent) == NONE;
+  bool Existence::passesDependenciesForRemoval(compMask requiredComps) {
+    return (requiredComps & componentsPresent) == NONE;
   }
   void Existence::turnOnFlags(compMask mask) {
     componentsPresent |= mask;

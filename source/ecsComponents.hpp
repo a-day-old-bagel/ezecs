@@ -82,8 +82,8 @@ namespace ezecs {
   struct Existence : public Component<Existence> {
     compMask componentsPresent = 0;
     bool flagIsOn(int compType);
-    bool passesPrerequisitesForAddition(compMask mask);
-    bool passesDependenciesForRemoval(compMask mask);
+    bool passesPrerequisitesForAddition(compMask requiredComps);
+    bool passesDependenciesForRemoval(compMask requiredComps);
     void turnOnFlags(compMask mask);
     void turnOffFlags(compMask mask);
   };

@@ -379,27 +379,31 @@ int main(int argc, char *argv[]) {
   }
   string code_stateHOut = ss_code_stateHOut.str();
 
-  // Build the string for the stuff in the component collection address getter switch
-  stringstream ss_code_collAddr;
-  for (auto name : compTypeNames) {
-    ss_code_collAddr
-        << TAB TAB TAB "case " << compTypes.at(name).enumName << ": return (void*)&comps_" << name << ";" << endl;
-  }
-  string code_collAddr = ss_code_collAddr.str();
-
   // Build a string for the stuff in the 'clear all components' loop
   stringstream ss_code_clearCompLoop;
   for (auto name : compTypeNames) {
     string enm = compTypes.at(name).enumName;
     ss_code_clearCompLoop
-        << TAB TAB "if (existence->flagIsOn(" << enm << ")) {" << endl
-        << TAB TAB TAB "existence->turnOffFlags(" << enm << ");" << endl
-        << TAB TAB TAB "for (auto dlgt : remCallBacks_" << enm << ") {" << endl
-        << TAB TAB TAB TAB "if (shouldFireRemovalCallback(";
+        << TAB TAB "remCompNoChecks(comps_" << name << ", existence, id, remCallbacks_" << name << ");" << endl;
   }
   string code_clearCompLoop = ss_code_clearCompLoop.str();
-  
 
+  // Build a string for the entity likeness callback registration
+  stringstream ss_code_cllbkReg;
+  for (auto name : compTypeNames) {
+    ss_code_cllbkReg << TAB TAB "if (likeness & " << compTypes.at(name).enumName << ") {" << endl;
+    ss_code_cllbkReg << TAB TAB TAB "registerAddCallback_" << name << "(additionDelegate);" << endl;
+    ss_code_cllbkReg << TAB TAB TAB "registerRemCallback_" << name << "(removalDelegate);" << endl;
+    ss_code_cllbkReg << TAB TAB "}" << endl;
+  }
+  string code_cllbkReg = ss_code_cllbkReg.str();
+
+  // Build a string for the collection manipulation methods
+  stringstream ss_code_compCollDefns;
+  for (auto name : compTypeNames) {
+    ss_code_compCollDefns << TAB "" << endl;  //TODO: finish
+  }
+  string code_compCollDefns = ss_code_compCollDefns.str();
   
   // keep count of lines generated
   unsigned long lineCount = 0;
@@ -424,15 +428,11 @@ int main(int argc, char *argv[]) {
   regex rx_compCollDecls("      \\/\\/ COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE");
   string str_stateHOut = replaceAndCount(str_stateHIn, rx_compCollDecls, code_stateHOut, lineCount);
 
-  regex rx_collAddrGet("      \\/\\/ COLLECTION ADDRESS GETTER CASES APPEAR HERE");
   regex rx_compClrLoop("    \\/\\/ A LOOP TO CLEAR ALL COMPONENTS APPEARS HERE");
-  regex rx_compDelLoop("    \\/\\/ A LOOP TO DELETE ALL COMPONENTS APPEARS HERE");
   regex rx_compRegCllbks("    \\/\\/ CODE TO REGISTER THE APPROPRIATE CALLBACKS APPEARS HERE");
   regex rx_compCollDef("  \\/\\/ COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE");
-  string str_stateCOut = replaceAndCount(str_stateCIn, rx_collAddrGet, code_collAddr, lineCount);
-  str_stateCOut = replaceAndCount(str_stateCOut, rx_compClrLoop, str_compTypeList, lineCount);
-  str_stateCOut = replaceAndCount(str_stateCOut, rx_compDelLoop, str_compTypeList, lineCount);
-  str_stateCOut = replaceAndCount(str_stateCOut, rx_compRegCllbks, str_compTypeList, lineCount);
+  string str_stateCOut = replaceAndCount(str_stateCIn, rx_compClrLoop, code_clearCompLoop, lineCount);
+  str_stateCOut = replaceAndCount(str_stateCOut, rx_compRegCllbks, code_cllbkReg, lineCount);
   str_stateCOut = replaceAndCount(str_stateCOut, rx_compCollDef, str_compTypeList, lineCount);
   
   // report lines generated

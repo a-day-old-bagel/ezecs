@@ -207,7 +207,9 @@ int main(int argc, char *argv[]) {
   regex rx_confCompDecls("(?:class|struct)\\s*(\\w*)\\s*:\\s*public\\s*Component\\s*<\\s*\\w*\\s*>");
   for (auto it = cregex_iterator(decls, decls + strlen(decls), rx_confCompDecls); it != cregex_iterator(); ++it) {
     cmatch match = *it;
-    compTypes[match[1].str()] = { match[1].str() };
+    CompType newType;
+    newType.name = match[1].str();
+    compTypes[match[1].str()] = newType;
     compTypeNames.push_back(match[1].str());
   }
   

@@ -41,6 +41,7 @@ if ( EZECS_BUILD_STATIC )
       ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp
   )
+  target_link_libraries( ecs_static ${EZECS_LINK_TO_LIBS})
   target_include_directories( ecs_static PUBLIC
       ${EZECS_OUTPUT_DIR}
   )
@@ -56,6 +57,7 @@ if ( EZECS_BUILD_SHARED )
       ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp
   )
+  target_link_libraries( ecs_shared ${EZECS_LINK_TO_LIBS})
   target_include_directories( ecs_shared PUBLIC
       ${EZECS_OUTPUT_DIR}
   )

@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include "ecsDelegate.hpp"
 
+// EXTRA INCLUDES APPEAR HERE
+
 /*
  * EZECS_COMPONENT_DEPENDENCIES( comp, ... )
  * Use this macro in your configuration file to specify which components must exist in a given entity before

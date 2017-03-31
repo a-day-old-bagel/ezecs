@@ -1,6 +1,33 @@
-//
-// Created by Galen on 2017-03-24.
-//
+/*
+ * Automatic code generator for ezecs. This code is not included in any of the
+ * libraries produced when you build ezecs. It just generates some source code
+ * when you provide CMake with the variable EZECS_CONFIG_FILE, which should
+ * point to a component config file that you wrote. Using this generator in an
+ * environment other than CMake's is not supported, but you probably could if
+ * you really really wanted to.
+ */
+/*
+ * Copyright (c) 2016 Galen Cochrane
+ * Galen Cochrane <galencochrane@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
 
 #include <sstream>
 #include <fstream>
@@ -8,6 +35,7 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <iomanip>
 
 using namespace std;
 
@@ -19,76 +47,31 @@ const string pathSeperator =
 "/";
 #endif
 
+// Prototype helper methods
+string enumStringIzer(const string& compType);
+string genStateHPrivatSection(const string &compType);
+string genStateHPublicSection(const string &compType, const string &compArgs);
+string genStateCDefns(const string &compType, const string &compArgs, const string &compArgsNameOnly);
+string getNamesFromArgList(string argList);
+string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& count);
+unsigned long occurrences(const string& s, const char c);
 /*
- * This converts a given component type name into an enumerator name.
- */
-string enumStringIzer(const string& compType) {
-  string result = compType;
-  transform(result.begin(), result.end(), result.begin(), ::toupper);
-  return result;
-}
-
-/*
- * This converts a given component type name into the private portions of the declarations of that component's
- * collection, collection manipulator methods, and callback structures.
- */
-string collStringIzer_private(const string& compType) {
-  stringstream result;
-  result << TAB TAB TAB "KvMap<entityId, " << compType << "> comps_" << compType << ";" << endl;
-  result << TAB TAB TAB "std::vector<EntNotifyDelegate> addCallbacks_" << compType << ";" << endl;
-  result << TAB TAB TAB "std::vector<EntNotifyDelegate> remCallbacks_" << compType << ";" << endl;
-  return result.str();
-}
-
-/*
- * This converts a given component type name and constructor arguments into the public portions of the declarations of
- * that component's collection, collection manipulator methods, and callback registration methods.
- */
-string collStringIzer_public(const string& compType, const string& compArgs) {
-  stringstream result;
-  result << TAB TAB TAB "CompOpReturn add" << compType << "(const entityId& id, " << compArgs << ");" << endl;
-  result << TAB TAB TAB "CompOpReturn rem" << compType << "(const entityId& id);" << endl;
-  result << TAB TAB TAB "CompOpReturn get" << compType << "(const entityId& id, " << compType << "** out);" << endl;
-  result << TAB TAB TAB "void registerAddCallback_" << compType << "(EntNotifyDelegate& dlgt);" << endl;
-  result << TAB TAB TAB "void registerRemCallback_" << compType << "(EntNotifyDelegate& dlgt);" << endl;
-  return result.str();
-}
-
-/*
- * This holds everything we need to know about a component type in order to generate all the associated code.
+ * CompType holds everything we need to know about a component type in order to generate all the associated code.
  */
 struct CompType {
   string name = "";
-  string constructorArgs, enumName, stateH_prv, stateH_pub;
+  string constructorArgs, constructorArgsNamesOnly, enumName, stateH_prv, stateH_pub, stateC;
   vector<string> prerequisiteComps;
   vector<string> dependentComps;
-  
-  void resolveNameBasedStrings() {
+
+  void resolveSimpleStrings() {
     enumName = enumStringIzer(name);
-    stateH_prv = collStringIzer_private(name);
-    stateH_pub = collStringIzer_public(name, constructorArgs);
+    stateH_prv = genStateHPrivatSection(name);
+    stateH_pub = genStateHPublicSection(name, constructorArgs);
+    constructorArgsNamesOnly = getNamesFromArgList(constructorArgs);
+    stateC = genStateCDefns(name, constructorArgs, constructorArgsNamesOnly);
   }
 };
-
-/*
- * Just a helper function to count character occurrences in a string
- */
-unsigned long occurrences(const string& s, const char c) {
-  unsigned long i = 0, count = 0, contain;
-  while((contain = s.find(c,i)) != string::npos){
-    count++;
-    i = contain + 1;
-  }
-  return count;
-}
-
-/*
- * A helper to keep track of how many lines of code have been inserted using regex_replace
- */
-string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& count) {
-  count += occurrences(reStr, '\n');
-  return regex_replace(inStr, rx, reStr);
-}
 
 /*
  * main is called by CMake
@@ -238,7 +221,7 @@ int main(int argc, char *argv[]) {
     if (it != cregex_iterator()) {
       cmatch match = *it;
       compTypes.at(name).constructorArgs = match[1].str();
-      compTypes.at(name).resolveNameBasedStrings();
+      compTypes.at(name).resolveSimpleStrings();
     } else {
       cerr << "Could not find constructor definition for " << name <<"! Make sure there is an explicit definition "
            << "inside the DEFINITIONS secion of your config file." << endl;
@@ -285,28 +268,6 @@ int main(int argc, char *argv[]) {
       compTypes.at(preq).dependentComps.push_back(name);
     }
   }
-
-
-
-  // Debug components TODO: remove this section
-  stringstream ss_compTypeList;
-  for (auto name : compTypeNames) {
-    cout << name << " (";
-    for (auto preq : compTypes.at(name).prerequisiteComps) {
-      cout << preq << (preq == compTypes.at(name).prerequisiteComps.back() ? "" : ", ");
-    }
-    cout << ") (";
-    for (auto depn : compTypes.at(name).dependentComps) {
-      cout << depn << (depn == compTypes.at(name).dependentComps.back() ? "" : ", ");
-    }
-    cout << ") | " << compTypes.at(name).enumName << " | (" << compTypes.at(name).constructorArgs << ")" << endl;
-    ss_compTypeList << TAB "// " << name << endl;
-  }
-  string str_compTypeList = ss_compTypeList.str();
-  cout << endl;
-
-  
-  
   
   // Build the string that goes in the component enumerators spot
   stringstream ss_code_compEnum;
@@ -373,7 +334,7 @@ int main(int argc, char *argv[]) {
   for (auto name : compTypeNames) {
     ss_code_stateHOut << compTypes.at(name).stateH_prv << endl;
   }
-  ss_code_stateHOut << TAB TAB << endl << "public:" << endl;
+  ss_code_stateHOut << endl << TAB TAB << "public:" << endl;
   for (auto name : compTypeNames) {
     ss_code_stateHOut << endl << compTypes.at(name).stateH_pub;
   }
@@ -401,7 +362,7 @@ int main(int argc, char *argv[]) {
   // Build a string for the collection manipulation methods
   stringstream ss_code_compCollDefns;
   for (auto name : compTypeNames) {
-    ss_code_compCollDefns << TAB "" << endl;  //TODO: finish
+    ss_code_compCollDefns << compTypes.at(name).stateC << endl;
   }
   string code_compCollDefns = ss_code_compCollDefns.str();
   
@@ -433,10 +394,7 @@ int main(int argc, char *argv[]) {
   regex rx_compCollDef("  \\/\\/ COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE");
   string str_stateCOut = replaceAndCount(str_stateCIn, rx_compClrLoop, code_clearCompLoop, lineCount);
   str_stateCOut = replaceAndCount(str_stateCOut, rx_compRegCllbks, code_cllbkReg, lineCount);
-  str_stateCOut = replaceAndCount(str_stateCOut, rx_compCollDef, str_compTypeList, lineCount);
-  
-  // report lines generated
-  cout << "LINES OF CODE GENERATED: " << lineCount << endl;
+  str_stateCOut = replaceAndCount(str_stateCOut, rx_compCollDef, code_compCollDefns, lineCount);
 
   // make some file header intro text for header and source files (next two sections)
   stringstream ss_hIntro;
@@ -468,6 +426,28 @@ int main(int argc, char *argv[]) {
   stateCOut << cppIntro << str_stateCOut;
   stateCOut.close();
 
+  // Give some feedback
+  for (auto name : compTypeNames) {
+    stringstream colName, colReq, colDep, colCon;
+    colName << left << name << " [" << compTypes.at(name).enumName << "]";
+    colReq << "REQ(";
+    for (auto preq : compTypes.at(name).prerequisiteComps) {
+      colReq << preq << (preq == compTypes.at(name).prerequisiteComps.back() ? "" : ", ");
+    }
+    colReq << ")";
+    colDep << "DEP(";
+    for (auto depn : compTypes.at(name).dependentComps) {
+      colDep << depn << (depn == compTypes.at(name).dependentComps.back() ? "" : ", ");
+    }
+    colDep << ")";
+    colCon << "CON(" << compTypes.at(name).constructorArgs << ")";
+    cout << setw(32) << left << colName.str();
+    cout << setw(32) << left << colReq.str();
+    cout << setw(32) << left << colDep.str();
+    cout << setw(32) << left << colCon.str() << endl;
+  }
+  // report lines generated
+  cout << "LINES OF CODE GENERATED: " << lineCount << endl;
 
   // Make some test files (temporary - erase later) TODO: erase this (next two sections)
   string fileName_testHOut = binDir + "/test.generated.hpp";
@@ -489,6 +469,107 @@ int main(int argc, char *argv[]) {
   sourceOut.close();
 
   return 0;
+}
+
+/*
+ * This converts a given component type name into an enumerator name.
+ */
+string enumStringIzer(const string& compType) {
+  string result = compType;
+  transform(result.begin(), result.end(), result.begin(), ::toupper);
+  return result;
+}
+
+/*
+ * This converts a given component type name into the private portions of the declarations of that component's
+ * collection, collection manipulator methods, and callback structures.
+ */
+string genStateHPrivatSection(const string &compType) {
+  stringstream result;
+  result << TAB TAB TAB "KvMap<entityId, " << compType << "> comps_" << compType << ";" << endl;
+  result << TAB TAB TAB "std::vector<EntNotifyDelegate> addCallbacks_" << compType << ";" << endl;
+  result << TAB TAB TAB "std::vector<EntNotifyDelegate> remCallbacks_" << compType << ";" << endl;
+  return result.str();
+}
+
+/*
+ * This converts a given component type name and constructor arguments into the public portions of the declarations of
+ * that component's collection, collection manipulator methods, and callback registration methods.
+ */
+string genStateHPublicSection(const string &compType, const string &compArgs) {
+  stringstream result;
+  result << TAB TAB TAB "CompOpReturn add_" << compType << "(const entityId& id, " << compArgs << ");" << endl;
+  result << TAB TAB TAB "CompOpReturn rem_" << compType << "(const entityId& id);" << endl;
+  result << TAB TAB TAB "CompOpReturn get_" << compType << "(const entityId& id, " << compType << "** out);" << endl;
+  result << TAB TAB TAB "void registerAddCallback_" << compType << "(EntNotifyDelegate& dlgt);" << endl;
+  result << TAB TAB TAB "void registerRemCallback_" << compType << "(EntNotifyDelegate& dlgt);" << endl;
+  return result.str();
+}
+
+/*
+ * This converts a given component type name and constructor arguments into the definitions of
+ * that component's collection, collection manipulator methods, and callback registration methods.
+ */
+string genStateCDefns(const string &compType, const string &compArgs, const string &compArgsNameOnly) {
+  stringstream result;
+  result << TAB "CompOpReturn State::add_" << compType << "(const entityId& id, " << compArgs << ") {" << endl;
+  result << TAB TAB "return addComp(comps_" << compType << ", id, addCallbacks_" << compType << ", "
+         << compArgsNameOnly << ");" << endl;
+  result << TAB "}" << endl;
+  result << TAB "CompOpReturn State::rem_" << compType << "(const entityId& id) {" << endl;
+  result << TAB TAB "return remComp(comps_" << compType << ", id, remCallbacks_" << compType << ");" << endl;
+  result << TAB "}" << endl;
+  result << TAB "CompOpReturn State::get_" << compType << "(const entityId& id, " << compType << "** out) {" << endl;
+  result << TAB TAB "return getComp(comps_" << compType << ", id, out);" << endl;
+  result << TAB "}" << endl;
+  result << TAB "void State::registerAddCallback_" << compType << "(EntNotifyDelegate& dlgt) {" << endl;
+  result << TAB TAB "addCallbacks_" << compType << ".push_back(dlgt);" << endl;
+  result << TAB "}" << endl;
+  result << TAB "void State::registerRemCallback_" << compType << "(EntNotifyDelegate& dlgt) {" << endl;
+  result << TAB TAB "remCallbacks_" << compType << ".push_back(dlgt);" << endl;
+  result << TAB "}" << endl;
+  return result.str();
+}
+
+/*
+ * Given a string formatted as a typed argument list (EX. "type0 name0, type1 name1, type2 name2, ..."),
+ * this extracts just the names and puts them in a non-typed list (EX. "name0, name1, name2, ...").
+ */
+string getNamesFromArgList(string argList) {
+  replace(argList.begin(), argList.end(), ',' , ' ');
+  stringstream input(argList), output;
+  string singleTerm;
+  bool oddPicker = false, first = true;
+  while (input >> singleTerm) {
+    if (oddPicker) {
+      if (first) { first = false; }
+      else { output << ", "; }
+      output << singleTerm;
+    }
+    oddPicker = !oddPicker;
+  }
+  return output.str();
+}
+
+/*
+ * A helper to keep track of how many lines of code have been inserted using regex_replace
+ */
+string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& count) {
+  count += occurrences(reStr, '\n');
+  return regex_replace(inStr, rx, reStr);
+}
+
+
+/*
+ * Just a helper function to count character occurrences in a string
+ */
+unsigned long occurrences(const string& s, const char c) {
+  unsigned long i = 0, count = 0, contain;
+  while((contain = s.find(c,i)) != string::npos){
+    count++;
+    i = contain + 1;
+  }
+  return count;
 }
 
 #undef TAB

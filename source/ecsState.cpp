@@ -87,12 +87,12 @@ namespace ezecs {
                              const entityId& id, const EntNotifyDelegates& callbacks, const types& ... args)
   {
     if (coll.emplace(std::piecewise_construct, std::forward_as_tuple(id), std::forward_as_tuple(args...))) {
-      existence->turnOnFlags(compType::flag);
       for (auto dlgt : callbacks) {
         if (shouldFireAdditionDlgt(dlgt.likeness, existence->componentsPresent, compType::flag)) {
           dlgt.fire(id);
         }
       }
+      existence->turnOnFlags(compType::flag);
       return SUCCESS;
     }
     return REDUNDANT;
@@ -154,8 +154,8 @@ namespace ezecs {
   inline bool State::shouldFireRemovalDlgt(const compMask& likeness, const compMask& current,
                                            const compMask& typeRemoved)
   {
-    if (likeness & current == likeness) {
-      if (likeness & ~typeRemoved != likeness) {
+    if ( (likeness & current) == likeness ) {
+      if ( (likeness & ~typeRemoved) != likeness) {
         return true;
       }
     }
@@ -164,8 +164,8 @@ namespace ezecs {
   inline bool State::shouldFireAdditionDlgt(const compMask& likeness, const compMask& current,
                                             const compMask& typeAdded)
   {
-    if (likeness & current != likeness) {
-      if (likeness & (current | typeAdded) == likeness) {
+    if ( (likeness & current) != likeness) {
+      if ( (likeness & (current | typeAdded)) == likeness) {
         return true;
       }
     }

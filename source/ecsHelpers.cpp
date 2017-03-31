@@ -39,11 +39,11 @@ namespace ezecs {
   }
   #undef GEN_CASE
 
-  EcsResult::EcsResult(const char* message /*= ""*/)
+  EzecsResult::EzecsResult(const char* message /*= ""*/)
       : lineNumber(-1), errCode(SUCCESS), fileName(""), message(message) { }
-  EcsResult::EcsResult(const char *fileName, int lineNumber, CompOpReturn errCode, const char *message /*= ""*/)
+  EzecsResult::EzecsResult(const char *fileName, int lineNumber, CompOpReturn errCode, const char *message /*= ""*/)
       : lineNumber(lineNumber), errCode(errCode), fileName(fileName), message(message) { }
-  std::string EcsResult::toString() {
+  std::string EzecsResult::toString() {
     return resolveErrorToString(errCode) + " from ECS in file \'" + fileName + "\' at line " +
         std::to_string(lineNumber) + (message.length() ? " with message: " : "") + message;
   }

@@ -56,7 +56,7 @@ namespace ezecs {
     public:
       System(State* state);
       bool init();
-      void tick(float dt);
+      void tick(double dt);
       void pause();
       void resume();
       void clean();
@@ -88,7 +88,7 @@ namespace ezecs {
   template<typename Derived_System>
   bool System<Derived_System>::init() {
     registries.resize(sys().requiredComponents.size());
-    for (int i = 0; i < sys().requiredComponents.size(); i++) {
+    for (int i = 0; i < sys().requiredComponents.size(); ++i) {
       state->listenForLikeEntities(
            sys().requiredComponents[i],
            EntNotifyDelegate{ DELEGATE_NOCLASS(discover), sys().requiredComponents[i], &registries[i] },
@@ -98,7 +98,7 @@ namespace ezecs {
     return sys().onInit();
   }
   template<typename Derived_System>
-  void System<Derived_System>::tick(float dt) {
+  void System<Derived_System>::tick(double dt) {
     sys().onTick(dt);
   }
   template<typename Derived_System>

@@ -35,18 +35,22 @@ namespace {
     int fakeA, fakeB;
     FooComp(int fakeA, int fakeB);
   };
+
   EZECS_COMPONENT_DEPENDENCIES(FooComp)
 
   class Bar_Comp : public Component<Bar_Comp> {
+    public:
       float number;
       Bar_Comp(float number);
   };
+
   EZECS_COMPONENT_DEPENDENCIES(Bar_Comp, FooComp)
 
   struct MehComp : public Component<MehComp> {
     char boo, hoo;
     MehComp(char boo, char hoo);
   };
+
   EZECS_COMPONENT_DEPENDENCIES(MehComp, FooComp, Bar_Comp)
 
   // END DECLARATIONS

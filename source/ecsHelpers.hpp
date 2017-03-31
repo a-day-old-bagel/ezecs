@@ -23,29 +23,32 @@
 #ifndef ECS_HELPERS_H
 #define ECS_HELPERS_H
 
+#include <cstring>
 #include <string>
 #include "ecsState.generated.hpp"
 
-#define ECS_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define EZECS_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
-#define ECS_ERR_MSG(res, msg) EcsResult(ECS_FILENAME, __LINE__, res, msg)
-#define ECS_ERR(res) EcsResult(ECS_FILENAME, __LINE__, res)
-#define ECS_MSG(msg) EcsResult(ECS_FILENAME, __LINE__, -1, msg)
-#define ECS_SUCCESS EcsResult();
+#define EZECS_ERR_MSG(res, msg) EzecsResult(EZECS_FILENAME, __LINE__, res, msg)
+#define EZECS_ERR(res) EzecsResult(EZECS_FILENAME, __LINE__, res)
+#define EZECS_MSG(msg) EzecsResult(EZECS_FILENAME, __LINE__, -1, msg)
+#define EZECS_SUCCESS EzecsResult();
 
-#define ECS_CHECK_ERR_MSG(res, msg) if (res != SUCCESS) return ECS_ERR_MSG(res, msg)
-#define ECS_CHECK_ERR(res) if (res != SUCCESS) { return ECS_ERR(res); }
-#define ECS_CHECK_MSG(res, msg) if (res != SUCCESS) { return ECS_MSG(msg); }
+#define EZECS_REQUIRE_REPORT(res, msg) if (res != SUCCESS) return EZECS_ERR_MSG(res, msg)
+#define EZECS_REQUIRE(res) if (res != SUCCESS) { return EZECS_ERR(res); }
+#define EZECS_REPORT(res, msg) if (res != SUCCESS) { return EZECS_MSG(msg); }
+
+#define EZECS_CHECK_PRINT(res) if (res.isError()) { printf("%s\n", res.toString().c_str()); }
 
 namespace ezecs {
   std::string resolveErrorToString(CompOpReturn err);
 
-  struct EcsResult {
+  struct EzecsResult {
     int lineNumber;
     CompOpReturn errCode;
     std::string fileName, message;
-    EcsResult(const char* message = "");
-    EcsResult(const char *fileName, int lineNumber, CompOpReturn errCode, const char *message = "");
+    EzecsResult(const char* message = "");
+    EzecsResult(const char *fileName, int lineNumber, CompOpReturn errCode, const char *message = "");
     std::string toString();
     inline bool isError() { return errCode != SUCCESS; }
   };

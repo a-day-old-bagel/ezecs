@@ -21,38 +21,103 @@
  * IN THE SOFTWARE.
  */
 
+#include <chrono>
+#include <iostream>
+#include <sstream>
+#include <vector>
 #include "ezecs.hpp"
+
+#define GET_TIME std::chrono::high_resolution_clock::now();
+#define DURATION std::chrono::duration<double, std::milli>
+#define CHECK(compOpReturn) EZECS_CHECK_PRINT(EZECS_ERR(compOpReturn))
 
 using namespace ezecs;
 
-class TestSystem : public System<TestSystem> {
-    std::vector<compMask> requiredComponents = {
-        EXISTENCE, FOOCOMP, BAR_COMP
-    };
-  public:
-    TestSystem(State* state) : System(state) {
-        
+struct TestSystem : public System<TestSystem> {
+  std::stringstream outputLog;
+  std::vector<compMask> requiredComponents = {
+      FOOCOMP | BAR_COMP,
+      MEHCOMP
+  };
+  TestSystem(State *state) : System(state) {
+
+  }
+  bool onInit() {
+    registries[0].discoverHandler = DELEGATE(&TestSystem::onDiscoverFooBar, this);
+    registries[0].forgetHandler = DELEGATE(&TestSystem::onForgetFooBar, this);
+    registries[1].discoverHandler = DELEGATE(&TestSystem::onDiscoverMeh, this);
+    registries[1].forgetHandler = DELEGATE(&TestSystem::onForgetMeh, this);
+    outputLog << "TEST SYSTEM INITIALIZED." << std::endl;
+    return true;
+  }
+  void onTick(double dt) {
+    outputLog << "TEST SYSTEM TICK TIME (ms): " << dt << "; bars say: ";
+    for (auto id : registries[0].ids) {
+      Bar_Comp* bar;
+      state->get_Bar_Comp(id, &bar);
+      bar->number += 0.2f;
+      outputLog << bar->number << ", ";
     }
-    bool onInit() {
-        return true;
-    }
-    void onTick(float dt) {
-        for (auto id : registries[0].ids) {
-            
-        }
-    }
-    void deInit() {
-        
-    }
-    bool onDiscover(const entityId& id) {
-        return true;
-    }
-    bool onForget(const entityId& id) {
-        return true;
-    }
+    outputLog << std::endl;
+  }
+  void deInit() {
+    outputLog << "TEST SYSTEM DESTROYED." << std::endl;
+    std::cout << outputLog.str();
+  }
+  bool onDiscoverFooBar(const entityId &id) {
+    outputLog << "TEST SYSTEM DISCOVERED A FOOBAR: " << id << std::endl;
+    return true;
+  }
+  bool onForgetFooBar(const entityId &id) {
+    outputLog << "TEST SYSTEM FORGOT A FOOBAR: " << id << std::endl;
+    return true;
+  }
+  bool onDiscoverMeh(const entityId &id) {
+    outputLog << "TEST SYSTEM DISCOVERED A MEH: " << id << std::endl;
+    return true;
+  }
+  bool onForgetMeh(const entityId &id) {
+    outputLog << "TEST SYSTEM FORGOT A MEH: " << id << std::endl;
+    return true;
+  }
 };
 
-int main (int argc, char *argv[]) {
-    testFunction();
-    return 0;
+int main(int argc, char *argv[]) {
+  State state;
+  TestSystem testSystem(&state);
+  testSystem.init();
+  auto thenTime = GET_TIME;
+
+  for (int i = 0; i < 5; ++i) {
+    auto nowTime = GET_TIME;
+    DURATION dt = nowTime - thenTime;
+    thenTime = nowTime;
+    testSystem.tick(dt.count());
+  }
+
+  entityId ent0;
+  CHECK( state.createEntity(&ent0)      );
+  CHECK( state.add_FooComp(ent0, 1, 2)  );
+  CHECK( state.add_Bar_Comp(ent0, 1.5f) );
+
+  for (int i = 0; i < 5; ++i) {
+    auto nowTime = GET_TIME;
+    DURATION dt = nowTime - thenTime;
+    thenTime = nowTime;
+    testSystem.tick(dt.count());
+  }
+
+  CHECK( state.add_MehComp(ent0, 0, 0)  );
+
+  for (int i = 0; i < 5; ++i) {
+    auto nowTime = GET_TIME;
+    DURATION dt = nowTime - thenTime;
+    thenTime = nowTime;
+    testSystem.tick(dt.count());
+  }
+
+  state.deleteEntity(ent0);
+  testSystem.deInit();
+
+  return 0;
 }

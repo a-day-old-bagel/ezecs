@@ -4,10 +4,6 @@ set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 set( CMAKE_DISABLE_IN_SOURCE_BUILD ON )
 project( ezecs )
 
-if (NOT WIN32)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif()
-
 # FixMe: The shared library doesn't seem to be working.
 option( EZECS_BUILD_STATIC "build static library" ON )
 option( EZECS_BUILD_SHARED "build shared library" OFF )

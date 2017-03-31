@@ -22,3 +22,6 @@ set( EZECS_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp )
 add_subdirectory( ../source ${CMAKE_CURRENT_BINARY_DIR}/../source )
 add_executable( ezecsTest main.cpp )
 target_link_libraries( ezecsTest ecs_static )
+
+set_property( TARGET ezecsTest PROPERTY CXX_STANDARD 11 )
+set_property( TARGET ezecsTest PROPERTY CXX_STANDARD_REQUIRED ON )

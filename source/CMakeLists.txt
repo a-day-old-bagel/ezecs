@@ -15,6 +15,8 @@ configure_file( ${EZECS_INPUT_DIR}/ecsSystem.hpp ${EZECS_OUTPUT_DIR}/ecsSystem.h
 configure_file( ${EZECS_INPUT_DIR}/ezecs.hpp ${EZECS_OUTPUT_DIR}/ezecs.hpp COPYONLY )
 
 add_executable ( generator ecsGenerator.cpp )
+set_property( TARGET generator  PROPERTY CXX_STANDARD 11 )
+set_property( TARGET generator  PROPERTY CXX_STANDARD_REQUIRED ON )
 add_custom_command (
     OUTPUT
       ${EZECS_OUTPUT_DIR}/test.generated.hpp
@@ -42,6 +44,8 @@ if ( EZECS_BUILD_STATIC )
   target_include_directories( ecs_static PUBLIC
       ${EZECS_OUTPUT_DIR}
   )
+  set_property( TARGET ecs_static PROPERTY CXX_STANDARD 11 )
+  set_property( TARGET ecs_static PROPERTY CXX_STANDARD_REQUIRED ON )
 endif()
 
 # FixMe: The shared library doesn't seem to be working.
@@ -55,4 +59,6 @@ if ( EZECS_BUILD_SHARED )
   target_include_directories( ecs_shared PUBLIC
       ${EZECS_OUTPUT_DIR}
   )
+  set_property( TARGET ecs_shared PROPERTY CXX_STANDARD 11 )
+  set_property( TARGET ecs_shared PROPERTY CXX_STANDARD_REQUIRED ON )
 endif()

@@ -30,6 +30,4 @@
 #include "ecsState.generated.hpp"
 #include "ecsSystem.hpp"
 
-#include "test.generated.hpp"
-
 #endif //EZECS_EZECS_HPP

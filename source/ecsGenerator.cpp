@@ -479,25 +479,6 @@ int main(int argc, char *argv[]) {
   // report lines generated
   cout << "LINES OF CODE GENERATED: " << lineCount << endl;
 
-  // Make some test files (temporary - erase later) TODO: erase this (next two sections)
-  string fileName_testHOut = binDir + "/test.generated.hpp";
-  ofstream headerOut(fileName_testHOut);
-  if (!headerOut) { return -18; }
-  headerOut << hppIntro
-            << "#include <iostream>\n"
-            << "namespace ezecs {\n"
-            << TAB "void testFunction() {\n"
-            << TAB TAB "printf(\"generated code works again!\\n\");\n"
-            << TAB "}\n"
-            << "}\n";
-  headerOut.close();
-
-  string fileName_testCOut = binDir + "/test.generated.cpp";
-  ofstream sourceOut(fileName_testCOut);
-  if (!sourceOut) { return -19; }
-  sourceOut << cppIntro;
-  sourceOut.close();
-
   return 0;
 }
 

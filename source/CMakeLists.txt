@@ -19,8 +19,6 @@ set_property( TARGET generator  PROPERTY CXX_STANDARD 11 )
 set_property( TARGET generator  PROPERTY CXX_STANDARD_REQUIRED ON )
 add_custom_command (
     OUTPUT
-      ${EZECS_OUTPUT_DIR}/test.generated.hpp
-      ${EZECS_OUTPUT_DIR}/test.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsComponents.generated.hpp
       ${EZECS_OUTPUT_DIR}/ecsComponents.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsState.generated.hpp
@@ -36,7 +34,6 @@ include_directories ( ${EZECS_OUTPUT_DIR} )
 
 if ( EZECS_BUILD_STATIC )
   add_library( ecs_static STATIC
-      ${EZECS_OUTPUT_DIR}/test.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsComponents.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp
@@ -52,7 +49,6 @@ endif()
 # FixMe: The shared library doesn't seem to be working.
 if ( EZECS_BUILD_SHARED )
   add_library ( ecs_shared SHARED
-      ${EZECS_OUTPUT_DIR}/test.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsComponents.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp

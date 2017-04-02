@@ -29,10 +29,10 @@
 
 #define EZECS_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
-#define EZECS_ERR_MSG(res, msg) EzecsResult(EZECS_FILENAME, __LINE__, res, msg)
-#define EZECS_ERR(res) EzecsResult(EZECS_FILENAME, __LINE__, res)
-#define EZECS_MSG(msg) EzecsResult(EZECS_FILENAME, __LINE__, -1, msg)
-#define EZECS_SUCCESS EzecsResult();
+#define EZECS_ERR_MSG(res, msg) ezecs::EzecsResult(EZECS_FILENAME, __LINE__, res, msg)
+#define EZECS_ERR(res) ezecs::EzecsResult(EZECS_FILENAME, __LINE__, res)
+#define EZECS_MSG(msg) ezecs::EzecsResult(EZECS_FILENAME, __LINE__, -1, msg)
+#define EZECS_SUCCESS ezecs::EzecsResult();
 
 #define EZECS_REQUIRE_REPORT(res, msg) if (res != SUCCESS) return EZECS_ERR_MSG(res, msg)
 #define EZECS_REQUIRE(res) if (res != SUCCESS) { return EZECS_ERR(res); }

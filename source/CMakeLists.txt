@@ -7,6 +7,10 @@ endif()
 set( EZECS_INPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR} )
 set( EZECS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR} )
 
+message(STATUS "using ${EZECS_CONFIG_FILE}")
+message(STATUS "to pull from ${EZECS_INPUT_DIR}")
+message(STATUS "and write to ${EZECS_OUTPUT_DIR}")
+
 configure_file( ${EZECS_INPUT_DIR}/ecsDelegate.hpp ${EZECS_OUTPUT_DIR}/ecsDelegate.hpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ecsHelpers.hpp ${EZECS_OUTPUT_DIR}/ecsHelpers.hpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ecsHelpers.cpp ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp COPYONLY )

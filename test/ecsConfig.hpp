@@ -25,6 +25,14 @@
 
 #include "ezecs.hpp"
 
+// BEGIN INCLUDES
+
+/*
+ * Libraries and stuff that your components need are to be included here.
+ */
+
+// END INCLUDES
+
 using namespace ezecs;
 
 namespace {
@@ -35,7 +43,6 @@ namespace {
     int fakeA, fakeB;
     FooComp(int fakeA, int fakeB);
   };
-
   EZECS_COMPONENT_DEPENDENCIES(FooComp)
 
   class Bar_Comp : public Component<Bar_Comp> {
@@ -43,15 +50,17 @@ namespace {
       float number;
       Bar_Comp(float number);
   };
-
   EZECS_COMPONENT_DEPENDENCIES(Bar_Comp, FooComp)
 
   struct MehComp : public Component<MehComp> {
     char boo, hoo;
     MehComp(char boo, char hoo);
   };
-
   EZECS_COMPONENT_DEPENDENCIES(MehComp, FooComp, Bar_Comp)
+  
+  struct EmptyComp : public Component<EmptyComp> {
+    EmptyComp();
+  };
 
   // END DECLARATIONS
 
@@ -65,6 +74,8 @@ namespace {
 
   MehComp::MehComp(char boo, char hoo)
       : boo(boo), hoo(hoo) {}
+  
+  EmptyComp::EmptyComp() {}
 
   // END DEFINITIONS
 

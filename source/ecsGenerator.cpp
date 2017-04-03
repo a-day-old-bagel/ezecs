@@ -509,7 +509,8 @@ string genStateHPrivatSection(const string &compType) {
  */
 string genStateHPublicSection(const string &compType, const string &compArgs) {
   stringstream result;
-  result << TAB TAB TAB "CompOpReturn add_" << compType << "(const entityId& id, " << compArgs << ");" << endl;
+  result << TAB TAB TAB "CompOpReturn add_" << compType << "(const entityId& id"
+         << (compArgs.length() ? ", " + compArgs : "") << ");" << endl;
   result << TAB TAB TAB "CompOpReturn rem_" << compType << "(const entityId& id);" << endl;
   result << TAB TAB TAB "CompOpReturn get_" << compType << "(const entityId& id, " << compType << "** out);" << endl;
   result << TAB TAB TAB "void registerAddCallback_" << compType << "(EntNotifyDelegate& dlgt);" << endl;
@@ -523,9 +524,10 @@ string genStateHPublicSection(const string &compType, const string &compArgs) {
  */
 string genStateCDefns(const string &compType, const string &compArgs, const string &compArgsNameOnly) {
   stringstream result;
-  result << TAB "CompOpReturn State::add_" << compType << "(const entityId& id, " << compArgs << ") {" << endl;
-  result << TAB TAB "return addComp(comps_" << compType << ", id, addCallbacks_" << compType << ", "
-         << compArgsNameOnly << ");" << endl;
+  result << TAB "CompOpReturn State::add_" << compType << "(const entityId& id"
+         << (compArgs.length() ? ", " + compArgs : "") << ") {" << endl;
+  result << TAB TAB "return addComp(comps_" << compType << ", id, addCallbacks_" << compType
+         << (compArgs.length() ? ", " + compArgsNameOnly : "") << ");" << endl;
   result << TAB "}" << endl;
   result << TAB "CompOpReturn State::rem_" << compType << "(const entityId& id) {" << endl;
   result << TAB TAB "return remComp(comps_" << compType << ", id, remCallbacks_" << compType << ");" << endl;

@@ -568,21 +568,8 @@ string getNamesFromArgList(string argList) {
  * A helper to keep track of how many lines of code have been inserted using regex_replace
  */
 string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& count) {
-  count += occurrences(reStr, '\n');
+  count += std::count(reStr.begin(), reStr.end(), '\n');
   return regex_replace(inStr, rx, reStr);
-}
-
-
-/*
- * Just a helper function to count character occurrences in a string
- */
-unsigned long occurrences(const string& s, const char c) {
-  unsigned long i = 0, count = 0, contain;
-  while((contain = s.find(c,i)) != string::npos){
-    count++;
-    i = contain + 1;
-  }
-  return count;
 }
 
 #undef TAB

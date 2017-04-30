@@ -148,6 +148,7 @@ namespace ezecs {
       *out = &coll.at(id);
       return SUCCESS;
     }
+    *out = NULL; // hopefully a null pointer exception will catch some bugs if somebody uses this wrong.
     return NONEXISTENT_COMP;
   }
 

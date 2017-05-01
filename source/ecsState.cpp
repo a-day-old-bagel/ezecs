@@ -79,7 +79,7 @@ namespace ezecs {
     if (getExistence(id, &existence) == SUCCESS) {
       return existence->componentsPresent;
     }
-    return NONEXISTENT_ENT;
+    return 0; // does not return compOpReturn, so a 0 indicates no components (even existence) present.
   }
 
   template<typename compType, typename ... types>

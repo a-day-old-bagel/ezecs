@@ -88,7 +88,7 @@ namespace ezecs {
   template<typename Derived_System>
   bool System<Derived_System>::init() {
     registries.resize(sys().requiredComponents.size());
-    for (int i = 0; i < sys().requiredComponents.size(); ++i) {
+    for (size_t i = 0; i < sys().requiredComponents.size(); ++i) {
       state->listenForLikeEntities(
            sys().requiredComponents[i],
            EntNotifyDelegate{ DELEGATE_NOCLASS(discover), sys().requiredComponents[i], &registries[i] },

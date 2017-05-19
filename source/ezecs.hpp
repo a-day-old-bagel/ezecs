@@ -20,8 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef EZECS_EZECS_HPP
-#define EZECS_EZECS_HPP
+
+#pragma once
 
 #include "ecsComponents.generated.hpp"
 #include "ecsDelegate.hpp"
@@ -29,5 +29,3 @@
 #include "ecsKvMap.hpp"
 #include "ecsState.generated.hpp"
 #include "ecsSystem.hpp"
-
-#endif //EZECS_EZECS_HPP

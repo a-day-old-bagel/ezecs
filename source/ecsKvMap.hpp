@@ -26,8 +26,7 @@
  * Right now, I'm using std::unordered_map from C++ standard library.
  */
 
-#ifndef HASHMAP_H
-#define  HASHMAP_H
+#pragma once
 
 #include <unordered_map>
 
@@ -106,6 +105,3 @@ namespace ezecs {
     return internalMap.end();
   }
 }
-
-#endif	/* HASHMAP_H */
-

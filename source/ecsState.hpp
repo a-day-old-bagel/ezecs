@@ -20,8 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef ECS_STATE_H
-#define ECS_STATE_H
+
+#pragma once
 
 #include <stack>
 #include <functional>
@@ -163,5 +163,3 @@ namespace ezecs {
   };
   
 }
-
-#endif //ECS_STATE_H

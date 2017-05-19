@@ -20,8 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef ECS_COMPONENTS_H
-#define ECS_COMPONENTS_H
+#pragma once
 
 #include <stdint.h>
 #include "ecsDelegate.hpp"
@@ -124,5 +123,3 @@ namespace ezecs {
   compMask getDependentComps(int compType);
 
 }
-
-#endif //ECS_COMPONENTS_H

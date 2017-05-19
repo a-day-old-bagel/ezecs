@@ -4,18 +4,18 @@ if ( NOT EZECS_CONFIG_FILE )
   message( FATAL_ERROR "Ezecs was not given a config file (EZECS_CONFIG_FILE not defined)." )
 endif()
 
-# check if the user has defined a target name prefix for the ecs targets (optional)
+# check if the user has defined a target name prefix for the ecs targets (optional, but strongly recommended)
 if ( NOT EZECS_TARGET_PREFIX )
-  message( WARNING "Ezecs was not given target name prefix. Targets will be named ecs_static or ecs_shared. \
+  message( WARNING "Ezecs was not given target name prefix. Target will be named 'ecs'. \
            If multiple targets use ezecs, target name collisions will occur." )
 endif()
 
 set( EZECS_INPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR} )
 set( EZECS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR} )
 
-message( STATUS "using ${EZECS_CONFIG_FILE}" )
-message( STATUS "to pull from ${EZECS_INPUT_DIR}" )
-message( STATUS "and write to ${EZECS_OUTPUT_DIR}" )
+message( STATUS "Ezecs is using ${EZECS_CONFIG_FILE}" )
+message( STATUS "to pull stuff from ${EZECS_INPUT_DIR}" )
+message( STATUS "and write stuff to ${EZECS_OUTPUT_DIR}" )
 
 configure_file( ${EZECS_INPUT_DIR}/ecsDelegate.hpp ${EZECS_OUTPUT_DIR}/ecsDelegate.hpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ecsHelpers.hpp ${EZECS_OUTPUT_DIR}/ecsHelpers.hpp COPYONLY )
@@ -42,31 +42,14 @@ add_custom_command (
 
 include_directories ( ${EZECS_OUTPUT_DIR} )
 
-if ( EZECS_BUILD_STATIC )
-  add_library( ${EZECS_TARGET_PREFIX}ecs_static STATIC
-      ${EZECS_OUTPUT_DIR}/ecsComponents.generated.cpp
-      ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
-      ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp
-  )
-  target_link_libraries( ${EZECS_TARGET_PREFIX}ecs_static ${EZECS_LINK_TO_LIBS})
-  target_include_directories( ${EZECS_TARGET_PREFIX}ecs_static PUBLIC
-      ${EZECS_OUTPUT_DIR}
-  )
-  set_property( TARGET ${EZECS_TARGET_PREFIX}ecs_static PROPERTY CXX_STANDARD 11 )
-  set_property( TARGET ${EZECS_TARGET_PREFIX}ecs_static PROPERTY CXX_STANDARD_REQUIRED ON )
-endif()
-
-# FixMe: The shared library doesn't seem to be working.
-if ( EZECS_BUILD_SHARED )
-  add_library ( ${EZECS_TARGET_PREFIX}ecs_shared SHARED
-      ${EZECS_OUTPUT_DIR}/ecsComponents.generated.cpp
-      ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
-      ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp
-  )
-  target_link_libraries( ${EZECS_TARGET_PREFIX}ecs_shared ${EZECS_LINK_TO_LIBS})
-  target_include_directories( ${EZECS_TARGET_PREFIX}ecs_shared PUBLIC
-      ${EZECS_OUTPUT_DIR}
-  )
-  set_property( TARGET ${EZECS_TARGET_PREFIX}ecs_shared PROPERTY CXX_STANDARD 11 )
-  set_property( TARGET ${EZECS_TARGET_PREFIX}ecs_shared PROPERTY CXX_STANDARD_REQUIRED ON )
-endif()
+add_library( ${EZECS_TARGET_PREFIX}ecs STATIC
+    ${EZECS_OUTPUT_DIR}/ecsComponents.generated.cpp
+    ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
+    ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp
+)
+target_link_libraries( ${EZECS_TARGET_PREFIX}ecs ${EZECS_LINK_TO_LIBS})
+target_include_directories( ${EZECS_TARGET_PREFIX}ecs PUBLIC
+    ${EZECS_OUTPUT_DIR}
+)
+set_property( TARGET ${EZECS_TARGET_PREFIX}ecs PROPERTY CXX_STANDARD 11 )
+set_property( TARGET ${EZECS_TARGET_PREFIX}ecs PROPERTY CXX_STANDARD_REQUIRED ON )

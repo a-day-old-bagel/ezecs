@@ -20,8 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef ECS_SYSTEM_H
-#define ECS_SYSTEM_H
+
+#pragma once
 
 #include <string>
 #include <vector>
@@ -125,5 +125,3 @@ namespace ezecs {
     return paused;
   }
 }
-
-#endif //ECS_SYSTEM_H

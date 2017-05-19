@@ -3,9 +3,7 @@
  * The goal is to be able to quickly and simply store a call to the method of any object or a call to a function
  * with state without worrying about how state is captured and whatnot.
  */
-
-#ifndef ECS_DELEGATE_H
-#define  ECS_DELEGATE_H
+#pragma once
 
 namespace ezecs {
    /*
@@ -87,5 +85,3 @@ namespace ezecs {
     return DelegateSpawner<noType, returnType, params...>();
   }
 }
-
-#endif //ECS_DELEGATE_H

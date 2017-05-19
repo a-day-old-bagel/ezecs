@@ -20,8 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef ECS_HELPERS_H
-#define ECS_HELPERS_H
+
+#pragma once
 
 #include <cstring>
 #include <string>
@@ -53,5 +53,3 @@ namespace ezecs {
     inline bool isError() { return errCode != SUCCESS; }
   };
 }
-
-#endif //ECS_HELPERS_H

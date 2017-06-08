@@ -82,6 +82,16 @@ namespace ezecs {
     return 0; // does not return compOpReturn, so a 0 indicates no components (even existence) present.
   }
 
+  void State::clear() {
+    std::vector<entityId> idsToErase;
+    for (auto pair : comps_Existence) {
+      idsToErase.push_back(pair.first);
+    }
+    for (auto id : idsToErase) {
+      deleteEntity(id);
+    }
+  }
+
   template<typename compType, typename ... types>
   inline CompOpReturn State::addCompNoChecks(KvMap<entityId, compType>& coll, Existence* existence,
                              const entityId& id, const EntNotifyDelegates& callbacks, const types& ... args)

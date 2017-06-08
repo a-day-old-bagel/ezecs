@@ -133,7 +133,12 @@ namespace ezecs {
        * @param id
        * @return a component mask, or zero (NONE) if the entity does not exist
        */
-       compMask getComponents(const entityId& id);
+      compMask getComponents(const entityId& id);
+
+      /**
+       * Deletes all entities
+       */
+      void clear();
     
     private:
       entityId nextId = 0;

@@ -55,6 +55,7 @@ namespace ezecs {
 
     public:
       System(State* state);
+      ~System();
       bool init();
       void tick(double dt);
       void pause();
@@ -66,6 +67,11 @@ namespace ezecs {
   template<typename Derived_System>
   System<Derived_System>::System(State* state)
       : state(state) { }
+  template<typename Derived_System>
+  System<Derived_System>::~System() {
+    //TODO: Remove callbacks from State
+    printf("%s is destructing\n", typeid(Derived_System).name());
+  }
   template<typename Derived_System>
   Derived_System& System<Derived_System>::sys() {
     return *static_cast<Derived_System*>(this);

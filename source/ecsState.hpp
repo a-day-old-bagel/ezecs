@@ -96,6 +96,8 @@ namespace ezecs {
       // COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE
 
     public:
+
+      ~State();
       
       /**
        * Creates a new entity (specifically an Existence component]

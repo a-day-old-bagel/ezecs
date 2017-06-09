@@ -25,6 +25,10 @@
 
 namespace ezecs {
 
+  State::~State() {
+    printf("ECS state is destructing.\n");
+  }
+
   CompOpReturn State::createEntity(entityId *newId) {
     entityId id;
     if (freedIds.empty()) {

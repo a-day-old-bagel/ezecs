@@ -31,14 +31,14 @@
 namespace ezecs {
 
   typedef Delegate<bool(const entityId& id)> entNotifyHandler;
-  static bool doNothing(const entityId&) { return true; }
+  static bool passThrough(const entityId &) { return true; }
 
   struct IdRegistry {
     std::vector<entityId> ids;
     entNotifyHandler discoverHandler;
     entNotifyHandler forgetHandler;
-    IdRegistry(entNotifyHandler&& discoverHandler = DELEGATE_NOCLASS(doNothing),
-               entNotifyHandler&& forgetHandler   = DELEGATE_NOCLASS(doNothing))
+    IdRegistry(entNotifyHandler&& discoverHandler = DELEGATE_NOCLASS(passThrough),
+               entNotifyHandler&& forgetHandler   = DELEGATE_NOCLASS(passThrough))
                : discoverHandler(discoverHandler), forgetHandler(forgetHandler) { }
   };
 
@@ -50,12 +50,13 @@ namespace ezecs {
       Derived_System& sys();
 
     protected:
+      std::string name = "Generic System";
       State* state;
       std::vector<IdRegistry> registries;
 
     public:
       System(State* state);
-      ~System();
+      virtual ~System();
       bool init();
       void tick(double dt);
       void pause();
@@ -70,7 +71,7 @@ namespace ezecs {
   template<typename Derived_System>
   System<Derived_System>::~System() {
     //TODO: Remove callbacks from State
-    printf("%s is destructing\n", typeid(Derived_System).name());
+    printf("%s is destructing\n", name.c_str());
   }
   template<typename Derived_System>
   Derived_System& System<Derived_System>::sys() {

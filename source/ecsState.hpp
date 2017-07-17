@@ -33,7 +33,7 @@
 namespace ezecs {
   
   struct EntNotifyDelegate {
-    Delegate<void(const entityId&, void* data)> dlgt;
+    EcsDelegate<void(const entityId&, void* data)> dlgt;
     compMask likeness;
     void* data;
     inline void fire(const entityId& id) { dlgt(id, data); }

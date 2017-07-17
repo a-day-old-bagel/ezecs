@@ -30,15 +30,15 @@
 
 namespace ezecs {
 
-  typedef Delegate<bool(const entityId& id)> entNotifyHandler;
+  typedef EcsDelegate<bool(const entityId& id)> entNotifyHandler;
   static bool passThrough(const entityId &) { return true; }
 
   struct IdRegistry {
     std::vector<entityId> ids;
     entNotifyHandler discoverHandler;
     entNotifyHandler forgetHandler;
-    IdRegistry(entNotifyHandler&& discoverHandler = DELEGATE_NOCLASS(passThrough),
-               entNotifyHandler&& forgetHandler   = DELEGATE_NOCLASS(passThrough))
+    IdRegistry(entNotifyHandler&& discoverHandler = ECS_DELEGATE_NOCLASS(passThrough),
+               entNotifyHandler&& forgetHandler   = ECS_DELEGATE_NOCLASS(passThrough))
                : discoverHandler(discoverHandler), forgetHandler(forgetHandler) { }
   };
 
@@ -98,8 +98,8 @@ namespace ezecs {
     for (size_t i = 0; i < sys().requiredComponents.size(); ++i) {
       state->listenForLikeEntities(
            sys().requiredComponents[i],
-           EntNotifyDelegate{ DELEGATE_NOCLASS(discover), sys().requiredComponents[i], &registries[i] },
-           EntNotifyDelegate{ DELEGATE_NOCLASS(forget), sys().requiredComponents[i], &registries[i] }
+           EntNotifyDelegate{ ECS_DELEGATE_NOCLASS(discover), sys().requiredComponents[i], &registries[i] },
+           EntNotifyDelegate{ ECS_DELEGATE_NOCLASS(forget), sys().requiredComponents[i], &registries[i] }
       );
     }
     return sys().onInit();

@@ -24,7 +24,6 @@
 #pragma once
 
 #include "ecsComponents.generated.hpp"
-#include "ecsDelegate.hpp"
 #include "ecsHelpers.hpp"
 #include "ecsKvMap.hpp"
 #include "ecsState.generated.hpp"

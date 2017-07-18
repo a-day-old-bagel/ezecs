@@ -27,13 +27,13 @@
 #include <functional>
 #include <vector>
 #include "ecsComponents.generated.hpp"
-#include "ecsDelegate.hpp"
+#include "delegate.hpp"
 #include "ecsKvMap.hpp"
 
 namespace ezecs {
   
   struct EntNotifyDelegate {
-    EcsDelegate<void(const entityId&, void* data)> dlgt;
+    rtu::Delegate<void(const entityId&, void* data)> dlgt;
     compMask likeness;
     void* data;
     inline void fire(const entityId& id) { dlgt(id, data); }

@@ -17,7 +17,7 @@ message( STATUS "Ezecs is using ${EZECS_CONFIG_FILE}" )
 message( STATUS "to pull stuff from ${EZECS_INPUT_DIR}" )
 message( STATUS "and write stuff to ${EZECS_OUTPUT_DIR}" )
 
-configure_file( ${EZECS_INPUT_DIR}/ecsDelegate.hpp ${EZECS_OUTPUT_DIR}/ecsDelegate.hpp COPYONLY )
+#configure_file( ${EZECS_INPUT_DIR}/ecsDelegate.hpp ${EZECS_OUTPUT_DIR}/ecsDelegate.hpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ecsHelpers.hpp ${EZECS_OUTPUT_DIR}/ecsHelpers.hpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ecsHelpers.cpp ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ecsKvMap.hpp ${EZECS_OUTPUT_DIR}/ecsKvMap.hpp COPYONLY )
@@ -47,7 +47,7 @@ add_library( ${EZECS_TARGET_PREFIX}ecs STATIC
     ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
     ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp
 )
-target_link_libraries( ${EZECS_TARGET_PREFIX}ecs ${EZECS_LINK_TO_LIBS})
+target_link_libraries( ${EZECS_TARGET_PREFIX}ecs ${EZECS_LINK_TO_LIBS} realtimeutils)
 target_include_directories( ${EZECS_TARGET_PREFIX}ecs PUBLIC
     ${EZECS_OUTPUT_DIR}
 )

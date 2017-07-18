@@ -23,7 +23,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "ecsDelegate.hpp"
+#include "delegate.hpp"
 
 // EXTRA INCLUDES APPEAR HERE
 

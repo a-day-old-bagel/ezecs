@@ -6,6 +6,8 @@ project( ezecs )
 
 option( EZECS_BUILD_TEST "builds using the test case (exclusively)" OFF )
 
+add_subdirectory( realtimeutils )
+
 if ( EZECS_BUILD_TEST )
   message( WARNING "Ezecs is building with the test case configuration ONLY, as per option EZECS_BUILD_TEST" )
   if ( EZECS_CONFIG_FILE )

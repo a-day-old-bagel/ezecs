@@ -26,7 +26,7 @@
 namespace ezecs {
 
   State::~State() {
-    printf("ECS state is destructing.\n");
+//    printf("ECS state is destructing.\n");
   }
 
   CompOpReturn State::createEntity(entityId *newId) {
@@ -53,7 +53,7 @@ namespace ezecs {
     if (status != SUCCESS) {
       return NONEXISTENT_ENT; // only fail status possible here indicates no existence component, hence no entity.
     }
-    
+
     // A LOOP TO CLEAR ALL COMPONENTS APPEARS HERE
 
     if (existence->componentsPresent != Existence::flag) {
@@ -191,7 +191,7 @@ namespace ezecs {
    * Component collection manipulation method definitions
    */
   CompOpReturn State::getExistence(const entityId& id, Existence** out) { return getComp(comps_Existence, id, out); }
-  
+
   // COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE
-  
+
 }

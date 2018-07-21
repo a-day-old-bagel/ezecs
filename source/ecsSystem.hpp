@@ -37,9 +37,9 @@ namespace ezecs {
     std::vector<entityId> ids;
     entNotifyHandler discoverHandler;
     entNotifyHandler forgetHandler;
-    IdRegistry(entNotifyHandler&& discoverHandler = RTU_FUNC_DLGT(passThrough),
-               entNotifyHandler&& forgetHandler   = RTU_FUNC_DLGT(passThrough))
-               : discoverHandler(discoverHandler), forgetHandler(forgetHandler) { }
+    explicit IdRegistry(entNotifyHandler&& discoverHandler = RTU_FUNC_DLGT(passThrough),
+                        entNotifyHandler&& forgetHandler   = RTU_FUNC_DLGT(passThrough))
+                        : discoverHandler(discoverHandler), forgetHandler(forgetHandler) { }
   };
 
   template<typename Derived_System>
@@ -55,7 +55,7 @@ namespace ezecs {
       std::vector<IdRegistry> registries;
 
     public:
-      System(State* state);
+      explicit System(State* state);
       virtual ~System();
       bool init();
       void tick(double dt);
@@ -84,8 +84,8 @@ namespace ezecs {
     }
   }
   static void forget(const entityId& id, void* data) {
-    IdRegistry* registry = reinterpret_cast<IdRegistry*>(data);
-    std::vector<entityId>::iterator position = std::find(registry->ids.begin(), registry->ids.end(), id);
+    auto registry = reinterpret_cast<IdRegistry*>(data);
+    auto position = std::find(registry->ids.begin(), registry->ids.end(), id);
     if (position != registry->ids.end()) {
       if (registry->forgetHandler(id)) {
         registry->ids.erase(position);

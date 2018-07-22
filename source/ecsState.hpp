@@ -137,6 +137,8 @@ namespace ezecs {
        */
       compMask getComponents(const entityId& id);
 
+      entityId getNextId();
+
       /**
        * Deletes all entities
        */

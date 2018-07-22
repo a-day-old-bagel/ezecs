@@ -86,6 +86,10 @@ namespace ezecs {
     return 0; // does not return compOpReturn, so a 0 indicates no components (even existence) present.
   }
 
+  entityId State::getNextId() {
+    return nextId;
+  }
+
   void State::clear() {
     std::vector<entityId> idsToErase;
     for (auto pair : comps_Existence) {

@@ -303,6 +303,7 @@ int main(int argc, char *argv[]) {
   for (auto name : compTypeNames) {
     ss_code_compEnum << TAB TAB << compTypes.at(name).enumName << " = 1 << " << ++i << "," << endl;
   }
+  ss_code_compEnum << TAB TAB << "MAX_COMPONENT_ENUM = 1 << " << ++i << endl;
   string code_compEnum = ss_code_compEnum.str();
   
   // Build the string that declares the number of user-made components

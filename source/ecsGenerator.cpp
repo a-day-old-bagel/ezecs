@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
          << " Make sure that comment exists and is formatted and placed correctly." << endl;
     return -10;
   }
-  
+
   /*
    * C-string versions of the above strings we just found
    */
@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
     compTypes[match[1].str()] = newType;
     compTypeNames.push_back(match[1].str());
   }
-  
+
   // Fill out compTypes' constructorArgs fields using those names, and then fill all the fields we can at this point.
   for (auto name : compTypeNames) {
     stringstream regexBuilder;
@@ -256,7 +256,7 @@ int main(int argc, char *argv[]) {
       return -11;
     }
   }
-  
+
   // Fill compTypes' 'prerequisiteComps' fields given the user's calls to the EZECS_COMPONENT_DEPENDENCIES macro
   regex rx_confCompDep("EZECS_COMPONENT_DEPENDENCIES\\s*\\((\\s*\\w*(?:\\s*,\\s*\\w+\\s*)*\\s*)\\)");
   for (auto it = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCompDep); it != cregex_iterator(); ++it) {
@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
       compTypes.at(preq).dependentComps.push_back(name);
     }
   }
-  
+
   // Build the string that goes in the component enumerators spot
   stringstream ss_code_compEnum;
   int i = 0;
@@ -305,12 +305,12 @@ int main(int argc, char *argv[]) {
   }
   ss_code_compEnum << TAB TAB << "MAX_COMPONENT_ENUM = 1 << " << ++i << endl;
   string code_compEnum = ss_code_compEnum.str();
-  
+
   // Build the string that declares the number of user-made components
   stringstream ss_code_numComps;
   ss_code_numComps << TAB "const uint8_t numCompTypes = " << i << ";" << endl;
   string code_numComps = ss_code_numComps.str();
-  
+
   // Build the string that defines the component dependency relationships
   stringstream ss_code_compDepends;
   for (auto name : compTypeNames) {
@@ -345,7 +345,7 @@ int main(int argc, char *argv[]) {
                         << compTypes.at(name).enumName << ";" << endl;
   }
   string code_compDepends = ss_code_compDepends.str();
-  
+
   // Build the strings that are used in the component dependency getter switch-case statements
   stringstream ss_code_compGetReq;
   stringstream ss_code_compGetDep;
@@ -357,7 +357,7 @@ int main(int argc, char *argv[]) {
   }
   string code_compGetReq = ss_code_compGetReq.str();
   string code_compGetDep = ss_code_compGetDep.str();
-  
+
   // Build the string that declares collections, methods, and stuff in ecsState.generated.hpp
   stringstream ss_code_stateHOut;
   for (auto name : compTypeNames) {
@@ -394,7 +394,7 @@ int main(int argc, char *argv[]) {
     ss_code_compCollDefns << compTypes.at(name).stateC << endl;
   }
   string code_compCollDefns = ss_code_compCollDefns.str();
-  
+
   // keep count of lines generated
   unsigned long lineCount = 0;
 
@@ -431,11 +431,11 @@ int main(int argc, char *argv[]) {
   stringstream ss_hIntro;
   ss_hIntro << "/*\n * EZECS - The E-Z Entity Component System\n * Header generated using " << argv[3] << "\n */\n\n";
   string hppIntro = ss_hIntro.str();
-  
+
   stringstream ss_cIntro;
   ss_cIntro << "/*\n * EZECS - The E-Z Entity Component System\n * Source generated using " << argv[3] << "\n */\n\n";
   string cppIntro = ss_cIntro.str();
-  
+
   // write the output file strings to the appropriate files (next four sections of code)
   ofstream compsHOut(fileName_compsHOut);
   if (!compsHOut) { return -14; }
@@ -548,6 +548,7 @@ string genStateCDefns(const string &compType, const string &compArgs, const stri
 /*
  * Given a string formatted as a typed argument list (EX. "type0 name0, type1 name1, type2 name2, ..."),
  * this extracts just the names and puts them in a non-typed list (EX. "name0, name1, name2, ...").
+ * TODO: this can't handle const at all right now. Sorry. FIXME.
  */
 string getNamesFromArgList(string argList) {
   replace(argList.begin(), argList.end(), ',' , ' ');

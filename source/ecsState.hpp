@@ -31,7 +31,7 @@
 #include "ecsKvMap.hpp"
 
 namespace ezecs {
-  
+
   struct EntNotifyDelegate {
     rtu::Delegate<void(const entityId&, void* data)> dlgt;
     compMask likeness;
@@ -39,7 +39,7 @@ namespace ezecs {
     inline void fire(const entityId& id) { dlgt(id, data); }
   };
   typedef std::vector<EntNotifyDelegate> EntNotifyDelegates;
-  
+
   /**
    * Component Operation Return Values
    * are returned by all public accessors and mutators of EcsState
@@ -54,7 +54,7 @@ namespace ezecs {
     MAX_ID_REACHED,
     SOMETHING_REALLY_BAD,
   };
-  
+
   /**
    * EcsState - Entity Component System State
    * Within is contained all game state data pertaining to the ecs. This data takes the form of lots and lots
@@ -92,34 +92,33 @@ namespace ezecs {
 
       KvMap<entityId, Existence> comps_Existence;
       CompOpReturn getExistence(const entityId& id, Existence** out);
-       
+
       // COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE
 
     public:
 
-      ~State();
-      
       /**
-       * Creates a new entity (specifically an Existence component]
+       * Creates a new entity (specifically an Existence component).
+       * If newId is nullptr (0), it will not be written to (naturally), and you won't get the ID back out.
        * @param newId is set to the id of the newly created entity, or 0 if unsuccessful.
        * @return SUCCESS or MAX_ID_REACHED if the maximum value of the entityId type has been reached
        */
-      CompOpReturn createEntity(entityId* newId);
-      
+      CompOpReturn createEntity(entityId* newId = nullptr);
+
       /**
        * Deletes all existing components from an entity except the Existence component
        * @param id The entity ID of the entity you wish to clear
        * @return SUCCESS or NONEXISENT_ENT if no entity exists at that id
        */
       CompOpReturn clearEntity(const entityId& id);
-      
+
       /**
        * Deletes an entity. It's ID may be re-used later, so this 'invalidates' the ID
        * @param id The entity ID of the entity you wish to delete
        * @return any of the possible return values of remExistence given that ID (see above)
        */
       CompOpReturn deleteEntity(const entityId& id);
-      
+
       /**
        * Use if you want to fire a callback whenever an entity with at least the components described by 'likeness'
        * comes into or leaves existence.
@@ -143,11 +142,11 @@ namespace ezecs {
        * Deletes all entities
        */
       void clear();
-    
+
     private:
       entityId nextId = 0;
       std::stack<entityId> freedIds;
-      
+
       /*
        * The rest of this stuff is used by the public component collection manipulation methods
        */
@@ -170,5 +169,5 @@ namespace ezecs {
       inline bool shouldFireRemovalDlgt(const compMask& likeness, const compMask& current, const compMask& typeRemoved);
       inline bool shouldFireAdditionDlgt(const compMask& likeness, const compMask& current, const compMask& typeAdded);
   };
-  
+
 }

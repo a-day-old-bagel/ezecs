@@ -25,15 +25,13 @@
 
 namespace ezecs {
 
-  State::~State() {
-//    printf("ECS state is destructing.\n");
-  }
-
   CompOpReturn State::createEntity(entityId *newId) {
     entityId id;
     if (freedIds.empty()) {
       if (nextId == std::numeric_limits<entityId>::max() || ++nextId == std::numeric_limits<entityId>::max()) {
-        *newId = 0; // ID 0 is not a valid id - ids start at 1. TODO: should check for id 0 in other calls?
+        if (newId) {
+          *newId = 0; // ID 0 is not a valid id - ids start at 1.
+        }
         return MAX_ID_REACHED;
       }
       id = nextId;
@@ -43,7 +41,9 @@ namespace ezecs {
     }
     Existence *existence = &comps_Existence[id];
     existence->turnOnFlags(Existence::flag);
-    *newId = id;
+    if (newId) {
+      *newId = id;
+    }
     return SUCCESS;
   }
 

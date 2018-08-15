@@ -382,8 +382,8 @@ int main(int argc, char *argv[]) {
   stringstream ss_code_cllbkReg;
   for (auto name : compTypeNames) {
     ss_code_cllbkReg << TAB TAB "if (likeness & " << compTypes.at(name).enumName << ") {" << endl;
-    ss_code_cllbkReg << TAB TAB TAB "registerAddCallback_" << name << "(additionDelegate);" << endl;
-    ss_code_cllbkReg << TAB TAB TAB "registerRemCallback_" << name << "(removalDelegate);" << endl;
+    ss_code_cllbkReg << TAB TAB TAB "registerAddCallback" << name << "(additionDelegate);" << endl;
+    ss_code_cllbkReg << TAB TAB TAB "registerRemCallback" << name << "(removalDelegate);" << endl;
     ss_code_cllbkReg << TAB TAB "}" << endl;
   }
   string code_cllbkReg = ss_code_cllbkReg.str();
@@ -510,12 +510,12 @@ string genStateHPrivatSection(const string &compType) {
  */
 string genStateHPublicSection(const string &compType, const string &compArgs) {
   stringstream result;
-  result << TAB TAB TAB "CompOpReturn add_" << compType << "(const entityId& id"
+  result << TAB TAB TAB "CompOpReturn add" << compType << "(const entityId& id"
          << (compArgs.length() ? ", " + compArgs : "") << ");" << endl;
-  result << TAB TAB TAB "CompOpReturn rem_" << compType << "(const entityId& id);" << endl;
-  result << TAB TAB TAB "CompOpReturn get_" << compType << "(const entityId& id, " << compType << "** out);" << endl;
-  result << TAB TAB TAB "void registerAddCallback_" << compType << "(EntNotifyDelegate& dlgt);" << endl;
-  result << TAB TAB TAB "void registerRemCallback_" << compType << "(EntNotifyDelegate& dlgt);" << endl;
+  result << TAB TAB TAB "CompOpReturn rem" << compType << "(const entityId& id);" << endl;
+  result << TAB TAB TAB "CompOpReturn get" << compType << "(const entityId& id, " << compType << "** out);" << endl;
+  result << TAB TAB TAB "void registerAddCallback" << compType << "(EntNotifyDelegate& dlgt);" << endl;
+  result << TAB TAB TAB "void registerRemCallback" << compType << "(EntNotifyDelegate& dlgt);" << endl;
   return result.str();
 }
 
@@ -525,21 +525,21 @@ string genStateHPublicSection(const string &compType, const string &compArgs) {
  */
 string genStateCDefns(const string &compType, const string &compArgs, const string &compArgsNameOnly) {
   stringstream result;
-  result << TAB "CompOpReturn State::add_" << compType << "(const entityId& id"
+  result << TAB "CompOpReturn State::add" << compType << "(const entityId& id"
          << (compArgs.length() ? ", " + compArgs : "") << ") {" << endl;
   result << TAB TAB "return addComp(comps_" << compType << ", id, addCallbacks_" << compType
          << (compArgs.length() ? ", " + compArgsNameOnly : "") << ");" << endl;
   result << TAB "}" << endl;
-  result << TAB "CompOpReturn State::rem_" << compType << "(const entityId& id) {" << endl;
+  result << TAB "CompOpReturn State::rem" << compType << "(const entityId& id) {" << endl;
   result << TAB TAB "return remComp(comps_" << compType << ", id, remCallbacks_" << compType << ");" << endl;
   result << TAB "}" << endl;
-  result << TAB "CompOpReturn State::get_" << compType << "(const entityId& id, " << compType << "** out) {" << endl;
+  result << TAB "CompOpReturn State::get" << compType << "(const entityId& id, " << compType << "** out) {" << endl;
   result << TAB TAB "return getComp(comps_" << compType << ", id, out);" << endl;
   result << TAB "}" << endl;
-  result << TAB "void State::registerAddCallback_" << compType << "(EntNotifyDelegate& dlgt) {" << endl;
+  result << TAB "void State::registerAddCallback" << compType << "(EntNotifyDelegate& dlgt) {" << endl;
   result << TAB TAB "addCallbacks_" << compType << ".push_back(dlgt);" << endl;
   result << TAB "}" << endl;
-  result << TAB "void State::registerRemCallback_" << compType << "(EntNotifyDelegate& dlgt) {" << endl;
+  result << TAB "void State::registerRemCallback" << compType << "(EntNotifyDelegate& dlgt) {" << endl;
   result << TAB TAB "remCallbacks_" << compType << ".push_back(dlgt);" << endl;
   result << TAB "}" << endl;
   return result.str();

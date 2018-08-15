@@ -71,7 +71,6 @@ namespace ezecs {
   template<typename Derived_System>
   System<Derived_System>::~System() {
     //TODO: Remove callbacks from State
-//    printf("%s is destructing\n", name.c_str());
   }
   template<typename Derived_System>
   Derived_System& System<Derived_System>::sys() {

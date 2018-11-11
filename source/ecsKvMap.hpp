@@ -66,11 +66,11 @@ namespace ezecs {
   template<class K, class V>
   V& KvMap<K, V>::operator [] (const K& key) {
     return internalMap[key];
-  };
+  }
   template<class K, class V>
   V& KvMap<K, V>::operator [] (K&& key) {
     return internalMap[key];
-  };
+  }
   template<class K, class V>
   void KvMap<K, V>::clear() noexcept {
     internalMap.clear();
@@ -95,7 +95,7 @@ namespace ezecs {
   template<class K, class V>
   size_t KvMap<K, V>::count(const K &key) const {
     return internalMap.count(key);
-  };
+  }
   template<class K, class V>
   typename KvMap<K, V>::const_iterator KvMap<K, V>::begin() const {
     return internalMap.begin();

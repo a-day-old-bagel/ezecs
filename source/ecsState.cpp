@@ -23,6 +23,8 @@
 #include <limits>
 #include "ecsState.generated.hpp"
 
+#pragma clang diagnostic ignored "-Wundefined-var-template"
+
 namespace ezecs {
 
   CompOpReturn State::createEntity(entityId *newId) {

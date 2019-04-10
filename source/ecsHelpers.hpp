@@ -26,6 +26,7 @@
 #include <cstring>
 #include <string>
 #include "ecsState.generated.hpp"
+#include "topics.hpp"
 
 #define EZECS_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
@@ -38,7 +39,8 @@
 #define EZECS_REQUIRE(res) if (res != SUCCESS) { return EZECS_ERR(res); }
 #define EZECS_REPORT(res, msg) if (res != SUCCESS) { return EZECS_MSG(msg); }
 
-#define EZECS_CHECK_PRINT(res) if (res.isError()) { printf("%s\n", res.toString().c_str()); }
+// #define EZECS_CHECK_PRINT(res) if (res.isError()) { printf("%s\n", res.toString().c_str()); }
+#define EZECS_CHECK_PRINT(res) if (res.isError()) { publishf("err", "%s\n", res.toString().c_str()); }
 
 namespace ezecs {
   std::string resolveErrorToString(CompOpReturn err);

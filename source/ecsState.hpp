@@ -137,6 +137,12 @@ namespace ezecs {
       compMask getComponents(const entityId& id);
 
       entityId getNextId();
+      
+      /**
+       * Get a dump of all entities with their component masks
+       */
+      KvMap<entityId, Existence> getDump() const;
+		  const KvMap<entityId, Existence> &getDumpRef() const;
 
       /**
        * Deletes all entities

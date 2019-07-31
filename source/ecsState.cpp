@@ -92,6 +92,13 @@ namespace ezecs {
     return nextId;
   }
 
+	KvMap<entityId, Existence> State::getDump() const {
+  	return comps_Existence;
+  }
+	const KvMap<entityId, Existence> &State::getDumpRef() const {
+		return comps_Existence;
+	}
+
   void State::clear() {
     std::vector<entityId> idsToErase;
     for (auto pair : comps_Existence) {

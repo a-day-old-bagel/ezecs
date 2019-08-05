@@ -137,132 +137,114 @@ int main(int argc, char *argv[]) {
   string str_stateCIn(ss_stateCIn.str());
   stateCIn.close();
 
-  // /*
-  //  * codes_includes will be filled with the include directives from the config files
-  //  * codes_confDecls will be filled with the component declarations from the config files
-  //  * codes_confDefns will be filled with the component definitions from the config files
-  //  */
-  // vector<string> codes_includes(str_configsIn.size());
-  // vector<string> code_confDecls(str_configsIn.size());
-  // vector<string> code_confDefns(str_configsIn.size());
-  //
-  // for (uint_fast32_t i = 0; i < str_configsIn.size(); ++i) {
-	//   // Get the entire block of code comprising the include directives
-	//   regex rx_confCodeInclBegin(R"(\/\/\s*BEGIN\s*INCLUDES\s*)");
-	//   const char *confIn = str_configsIn[0].c_str();
-	//   auto rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeInclBegin);
-	//   if (rxit != cregex_iterator()) {
-	// 	  cmatch match = *rxit;
-	// 	  code = str_configsIn[0].substr((size_t)match.position() + match.length(), str_configsIn[0].length());
-	//   } else {
-	// 	  cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN INCLUDES' :"
-	// 	       << " Make sure that comment exists and is formatted and placed correctly." << endl;
-	// 	  return -7;
-	//   }
-	//
-	//   // Get just the declarations section of the config file code
-	//   regex rx_confCodeInclEnd(R"(\s*\/\/\s*END\s*INCLUDES)");
-	//   const char* confIncludes = code.c_str();
-	//   rxit = cregex_iterator(confIncludes, confIncludes + strlen(confIncludes), rx_confCodeInclEnd);
-	//   if (rxit != cregex_iterator()) {
-	// 	  cmatch match = *rxit;
-	// 	  code = code.substr(0, (size_t)match.position());
-	//   } else {
-	// 	  cerr << "Parsing provided ezecs config file: Could not identify comment '// END INCLUDES' :"
-	// 	       << " Make sure that comment exists and is formatted and placed correctly." << endl;
-	// 	  return -8;
-	//   }
-  // }
-
-	/*
-	* code_includes will be filled with the include directives from the config file
-	* code_confDecls will be filled with the component declarations from the config file
-	* code_confDefns will be filled with the component definitions from the config file
-	*/
-	string code_includes, code_confDecls, code_confDefns;
-
-  // Get the entire block of code comprising the include directives
-  regex rx_confCodeInclBegin(R"(\/\/\s*BEGIN\s*INCLUDES\s*)");
-  const char *confIn = str_configsIn[0].c_str();
-  auto rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeInclBegin);
-  if (rxit != cregex_iterator()) {
-    cmatch match = *rxit;
-    code_includes = str_configsIn[0].substr((size_t)match.position() + match.length(), str_configsIn[0].length());
-  } else {
-    cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN INCLUDES' :"
-         << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return -7;
-  }
-
-  // Get just the declarations section of the config file code
-  regex rx_confCodeInclEnd(R"(\s*\/\/\s*END\s*INCLUDES)");
-  const char* confIncludes = code_includes.c_str();
-  rxit = cregex_iterator(confIncludes, confIncludes + strlen(confIncludes), rx_confCodeInclEnd);
-  if (rxit != cregex_iterator()) {
-    cmatch match = *rxit;
-    code_includes = code_includes.substr(0, (size_t)match.position());
-  } else {
-    cerr << "Parsing provided ezecs config file: Could not identify comment '// END INCLUDES' :"
-         << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return -8;
-  }
-
-  // Get the entire block of code comprising the component declarations and definitions from the config file
-  string code_confAll;
-  regex rx_confCodeAll(R"(\/\/\s*BEGIN\s*DECLARATIONS\s*)");
-  rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeAll);
-  if (rxit != cregex_iterator()) {
-    cmatch match = *rxit;
-    code_confAll = str_configsIn[0].substr((size_t)match.position() + match.length(), str_configsIn[0].length());
-  } else {
-    cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN DECLARATIONS' :"
-         << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return -7;
-  }
-
-  // Get just the declarations section of the config file code
-  regex rx_confCodeEndDecl(R"(\s*\/\/\s*END\s*DECLARATIONS)");
-  const char* confDecls = code_confAll.c_str();
-  rxit = cregex_iterator(confDecls, confDecls + strlen(confDecls), rx_confCodeEndDecl);
-  if (rxit != cregex_iterator()) {
-    cmatch match = *rxit;
-    code_confDecls = code_confAll.substr(0, (size_t)match.position());
-  } else {
-    cerr << "Parsing provided ezecs config file: Could not identify comment '// END DECLARATIONS' :"
-         << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return -8;
-  }
-
-  // Get just the definitions section of the config file code (then cut off the trailing unrelated code)
-  string code_confDefnsDirty;
-  regex rx_confCodeBegDefn(R"(\/\/\s*BEGIN\s*DEFINITIONS\s*)");
-  rxit = cregex_iterator(confDecls, confDecls + strlen(confDecls), rx_confCodeBegDefn);
-  if (rxit != cregex_iterator()) {
-    cmatch match = *rxit;
-    code_confDefnsDirty = code_confAll.substr((size_t)match.position() + match.length(), code_confAll.length());
-  } else {
-    cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN DEFINITIONS' :"
-         << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return -9;
-  }
-  regex rx_confCodeEndDefn(R"(\s*\/\/\s*END\s*DEFINITIONS)");
-  const char* confDefnsDirty = code_confDefnsDirty.c_str();
-  rxit = cregex_iterator(confDefnsDirty, confDefnsDirty + strlen(confDefnsDirty), rx_confCodeEndDefn);
-  if (rxit != cregex_iterator()) {
-    cmatch match = *rxit;
-    code_confDefns = code_confDefnsDirty.substr(0, (size_t)match.position());
-  } else {
-    cerr << "Parsing provided ezecs config file: Could not identify comment '// END DEFINITIONS' :"
-         << " Make sure that comment exists and is formatted and placed correctly." << endl;
-    return -10;
-  }
-
   /*
-   * C-string versions of the above strings we just found
+   * codes_includes will be filled with the include directives from the config files
+   * codes_confDecls will be filled with the component declarations from the config files
+   * codes_confDefns will be filled with the component definitions from the config files
    */
-  const char* decls = code_confDecls.c_str();
-  const char* defns = code_confDefns.c_str();
+  vector<string> codes_includes(str_configsIn.size());
+  vector<string> codes_confDecls(str_configsIn.size());
+  vector<string> codes_confDefns(str_configsIn.size());
 
+  for (uint_fast32_t i = 0; i < str_configsIn.size(); ++i) {
+	  // Get the entire block of code comprising the include directives
+	  regex rx_confCodeInclBegin(R"(\/\/\s*BEGIN\s*INCLUDES\s*)");
+	  const char *confIn = str_configsIn[i].c_str();
+	  auto rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeInclBegin);
+	  if (rxit != cregex_iterator()) {
+		  cmatch match = *rxit;
+		  codes_includes[i] = str_configsIn[i].substr((size_t)match.position() + match.length(), str_configsIn[i].length());
+	  } else {
+		  cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN INCLUDES' :"
+		       << " Make sure that comment exists and is formatted and placed correctly." << endl;
+		  return -7;
+	  }
+
+	  // Get just the declarations section of the config file code
+	  regex rx_confCodeInclEnd(R"(\s*\/\/\s*END\s*INCLUDES)");
+	  const char* confIncludes = codes_includes[i].c_str();
+	  rxit = cregex_iterator(confIncludes, confIncludes + strlen(confIncludes), rx_confCodeInclEnd);
+	  if (rxit != cregex_iterator()) {
+		  cmatch match = *rxit;
+		  codes_includes[i] = codes_includes[i].substr(0, (size_t)match.position());
+	  } else {
+		  cerr << "Parsing provided ezecs config file: Could not identify comment '// END INCLUDES' :"
+		       << " Make sure that comment exists and is formatted and placed correctly." << endl;
+		  return -8;
+	  }
+	  
+	  // Get the entire block of code comprising the component declarations and definitions from the config file
+	  string code_confAll;
+	  regex rx_confCodeAll(R"(\/\/\s*BEGIN\s*DECLARATIONS\s*)");
+	  rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeAll);
+	  if (rxit != cregex_iterator()) {
+		  cmatch match = *rxit;
+		  code_confAll = str_configsIn[i].substr((size_t)match.position() + match.length(), str_configsIn[i].length());
+	  } else {
+		  cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN DECLARATIONS' :"
+		       << " Make sure that comment exists and is formatted and placed correctly." << endl;
+		  return -7;
+	  }
+
+	  // Get just the declarations section of the config file code
+	  regex rx_confCodeEndDecl(R"(\s*\/\/\s*END\s*DECLARATIONS)");
+	  const char* confDecls = code_confAll.c_str();
+	  rxit = cregex_iterator(confDecls, confDecls + strlen(confDecls), rx_confCodeEndDecl);
+	  if (rxit != cregex_iterator()) {
+		  cmatch match = *rxit;
+		  codes_confDecls[i] = code_confAll.substr(0, (size_t)match.position());
+	  } else {
+		  cerr << "Parsing provided ezecs config file: Could not identify comment '// END DECLARATIONS' :"
+		       << " Make sure that comment exists and is formatted and placed correctly." << endl;
+		  return -8;
+	  }
+	  
+	  // Get just the definitions section of the config file code (then cut off the trailing unrelated code)
+	  string code_confDefnsDirty;
+	  regex rx_confCodeBegDefn(R"(\/\/\s*BEGIN\s*DEFINITIONS\s*)");
+	  rxit = cregex_iterator(confDecls, confDecls + strlen(confDecls), rx_confCodeBegDefn);
+	  if (rxit != cregex_iterator()) {
+		  cmatch match = *rxit;
+		  code_confDefnsDirty = code_confAll.substr((size_t)match.position() + match.length(), code_confAll.length());
+	  } else {
+		  cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN DEFINITIONS' :"
+		       << " Make sure that comment exists and is formatted and placed correctly." << endl;
+		  return -9;
+	  }
+	  regex rx_confCodeEndDefn(R"(\s*\/\/\s*END\s*DEFINITIONS)");
+	  const char* confDefnsDirty = code_confDefnsDirty.c_str();
+	  rxit = cregex_iterator(confDefnsDirty, confDefnsDirty + strlen(confDefnsDirty), rx_confCodeEndDefn);
+	  if (rxit != cregex_iterator()) {
+		  cmatch match = *rxit;
+		  codes_confDefns[i] = code_confDefnsDirty.substr(0, (size_t)match.position());
+	  } else {
+		  cerr << "Parsing provided ezecs config file: Could not identify comment '// END DEFINITIONS' :"
+		       << " Make sure that comment exists and is formatted and placed correctly." << endl;
+		  return -10;
+	  }
+  }
+  
+  // add all the results from the different configuration files together
+  stringstream all_confs, all_includes, all_confDecls, all_confDefns;
+	for (uint_fast32_t i = 0; i < str_configsIn.size(); ++i) {
+		all_confs << str_configsIn[i];
+		all_includes << codes_includes[i];
+		all_confDecls << codes_confDecls[i];
+		all_confDefns << codes_confDefns[i];
+	}
+	
+	/*
+   * String and C-string versions of the above strings we just found
+   */
+	string sconfs = all_confs.str();
+	string sincls = all_includes.str();
+	string sdecls = all_confDecls.str();
+	string sdefns = all_confDefns.str();
+	const char* confs = sconfs.c_str();
+	const char* incls = sincls.c_str();
+	const char* decls = sdecls.c_str();
+	const char* defns = sdefns.c_str();
+	
   /*
    * compTypes will have keys that are component type names and values that are CompType (component type descriptions)
    * compTypeNames is just a vector of all of their names.
@@ -300,7 +282,7 @@ int main(int argc, char *argv[]) {
 
   // Fill compTypes' 'prerequisiteComps' fields given the user's calls to the EZECS_COMPONENT_DEPENDENCIES macro
   regex rx_confCompDep(R"(EZECS_COMPONENT_DEPENDENCIES\s*\((\s*\w*(?:\s*,\s*\w+\s*)*\s*)\))");
-  for (auto it = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCompDep); it != cregex_iterator(); ++it) {
+  for (auto it = cregex_iterator(confs, confs + strlen(confs), rx_confCompDep); it != cregex_iterator(); ++it) {
     cmatch match = *it;
     stringstream ss_depArgs(match[1].str());
     CompType* compType = nullptr;
@@ -444,8 +426,8 @@ int main(int argc, char *argv[]) {
   regex rx_compDecls(R"(  \/\/ COMPONENT DECLARATIONS APPEAR HERE)");
   regex rx_compEnums(R"(    \/\/ COMPONENT TYPE ENUMERATORS APPEAR HERE)");
   regex rx_numCompTypes(R"(  \/\/ NUMBER OF COMPONENT TYPES APPEARS HERE)");
-  string str_compsHOut = replaceAndCount(str_compsHIn, rx_compIncls, code_includes, lineCount);
-  str_compsHOut = replaceAndCount(str_compsHOut, rx_compDecls, TAB + code_confDecls, lineCount);
+	string str_compsHOut = replaceAndCount(str_compsHIn, rx_compIncls, sincls, lineCount);
+	str_compsHOut = replaceAndCount(str_compsHOut, rx_compDecls, TAB + sdecls, lineCount);
   str_compsHOut = replaceAndCount(str_compsHOut, rx_compEnums, code_compEnum, lineCount);
   str_compsHOut = replaceAndCount(str_compsHOut, rx_numCompTypes, code_numComps, lineCount);
 
@@ -454,7 +436,7 @@ int main(int argc, char *argv[]) {
   regex rx_compGetReqDef(R"(      \/\/ COMPONENT REQUIREMENTS GETTER CASES APPEAR HERE)");
   regex rx_compGetDepDef(R"(      \/\/ COMPONENT DEPENDENTS GETTER CASES APPEAR HERE)");
   string str_compsCOut = replaceAndCount(str_compsCIn, rx_compDepDef, code_compDepends, lineCount);
-  str_compsCOut = replaceAndCount(str_compsCOut, rx_compMetDef, TAB + code_confDefns, lineCount);
+  str_compsCOut = replaceAndCount(str_compsCOut, rx_compMetDef, TAB + sdefns, lineCount);
   str_compsCOut = replaceAndCount(str_compsCOut, rx_compGetReqDef, code_compGetReq, lineCount);
   str_compsCOut = replaceAndCount(str_compsCOut, rx_compGetDepDef, code_compGetDep, lineCount);
 

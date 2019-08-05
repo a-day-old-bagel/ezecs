@@ -43,10 +43,10 @@ struct TestSystem : public System<TestSystem> {
 
   }
   bool onInit() {
-    registries[0].discoverHandler = DELEGATE(&TestSystem::onDiscoverFooBar, this);
-    registries[0].forgetHandler = DELEGATE(&TestSystem::onForgetFooBar, this);
-    registries[1].discoverHandler = DELEGATE(&TestSystem::onDiscoverMeh, this);
-    registries[1].forgetHandler = DELEGATE(&TestSystem::onForgetMeh, this);
+    registries[0].discoverHandler = RTU_MTHD_DLGT(&TestSystem::onDiscoverFooBar, this);
+    registries[0].forgetHandler = RTU_MTHD_DLGT(&TestSystem::onForgetFooBar, this);
+    registries[1].discoverHandler = RTU_MTHD_DLGT(&TestSystem::onDiscoverMeh, this);
+    registries[1].forgetHandler = RTU_MTHD_DLGT(&TestSystem::onForgetMeh, this);
     outputLog << "TEST SYSTEM INITIALIZED." << std::endl;
     return true;
   }
@@ -54,7 +54,7 @@ struct TestSystem : public System<TestSystem> {
     outputLog << "TEST SYSTEM TICK TIME (ms): " << dt << "; bars say: ";
     for (auto id : registries[0].ids) {
       Bar_Comp* bar;
-      state->get_Bar_Comp(id, &bar);
+      state->getBar_Comp(id, &bar);
       bar->number += 0.2f;
       outputLog << bar->number << ", ";
     }
@@ -97,8 +97,8 @@ int main(int argc, char *argv[]) {
 
   entityId ent0;
   CHECK( state.createEntity(&ent0)      );
-  CHECK( state.add_FooComp(ent0, 1, 2)  );
-  CHECK( state.add_Bar_Comp(ent0, 1.5f) );
+  CHECK( state.addFooComp(ent0, 1, 2)  );
+  CHECK( state.addBar_Comp(ent0, 1.5f) );
 
   for (int i = 0; i < 5; ++i) {
     auto nowTime = GET_TIME;
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
     testSystem.tick(dt.count());
   }
 
-  CHECK( state.add_MehComp(ent0, 0, 0)  );
+  CHECK( state.addMehComp(ent0, 0, 0)  );
 
   for (int i = 0; i < 5; ++i) {
     auto nowTime = GET_TIME;

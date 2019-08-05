@@ -6,10 +6,10 @@
 
 set( TEST_TARGET_NAME ezecsTestTiered )
 
-set( EZECS_CONFIG_FILE ecsConfig.hpp )
+set( EZECS_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp )
 set( EZECS_TARGET_PREFIX ${TEST_TARGET_NAME}_ )
 set( EZECS_LINK_TO_LIBS ) # empty in this case
-add_subdirectory( ${PROJECT_SOURCE_DIR}/source ${PROJECT_BINARY_DIR}/source )
+add_subdirectory( ${PROJECT_SOURCE_DIR}/source ${PROJECT_BINARY_DIR}/test/tiered/generated )
 
 add_executable( ${TEST_TARGET_NAME} main.cpp )
 target_link_libraries( ${TEST_TARGET_NAME} ${TEST_TARGET_NAME}_ecs )

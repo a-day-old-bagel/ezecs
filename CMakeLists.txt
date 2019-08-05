@@ -8,7 +8,7 @@ set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 option( EZECS_SET_PATH_ONLY "Only set the variable 'EZECS_SOURCE_DIR' - don't build." OFF )
-option( EZECS_BUILD_TEST "builds using the test case (exclusively)" OFF )
+option( EZECS_BUILD_TEST "builds using the test case (exclusively)" ON )
 
 if (NOT TARGET realtimeutils)
   add_subdirectory( realtimeutils )

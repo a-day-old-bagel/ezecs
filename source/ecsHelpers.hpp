@@ -40,7 +40,7 @@
 #define EZECS_REPORT(res, msg) if (res != SUCCESS) { return EZECS_MSG(msg); }
 
 // #define EZECS_CHECK_PRINT(res) if (res.isError()) { printf("%s\n", res.toString().c_str()); }
-#define EZECS_CHECK_PRINT(res) if (res.isError()) { publishf("err", "%s\n", res.toString().c_str()); }
+#define EZECS_CHECK_PRINT(res) if (res.isError()) { rtu::topics::publishf("err", "%s\n", res.toString().c_str()); }
 
 namespace ezecs {
   std::string resolveErrorToString(CompOpReturn err);

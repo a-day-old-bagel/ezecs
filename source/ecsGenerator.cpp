@@ -54,7 +54,7 @@ string genStateHPublicSection(const string &compType, const string &compArgs);
 string genStateCDefns(const string &compType, const string &compArgs, const string &compArgsNameOnly);
 string getNamesFromArgList(string argList);
 string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& count);
-unsigned long occurrences(const string& s, const char c);
+unsigned long occurrences(const string& s, char c);
 /*
  * CompType holds everything we need to know about a component type in order to generate all the associated code.
  */
@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
   string code_includes, code_confDecls, code_confDefns;
 
   // Get the entire block of code comprising the include directives
-  regex rx_confCodeInclBegin("\\/\\/\\s*BEGIN\\s*INCLUDES\\s*");
+  regex rx_confCodeInclBegin(R"(\/\/\s*BEGIN\s*INCLUDES\s*)");
   const char *confIn = str_configIn.c_str();
   auto rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeInclBegin);
   if (rxit != cregex_iterator()) {
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Get just the declarations section of the config file code
-  regex rx_confCodeInclEnd("\\s*\\/\\/\\s*END\\s*INCLUDES");
+  regex rx_confCodeInclEnd(R"(\s*\/\/\s*END\s*INCLUDES)");
   const char* confIncludes = code_includes.c_str();
   rxit = cregex_iterator(confIncludes, confIncludes + strlen(confIncludes), rx_confCodeInclEnd);
   if (rxit != cregex_iterator()) {
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
 
   // Get the entire block of code comprising the component declarations and definitions from the config file
   string code_confAll;
-  regex rx_confCodeAll("\\/\\/\\s*BEGIN\\s*DECLARATIONS\\s*");
+  regex rx_confCodeAll(R"(\/\/\s*BEGIN\s*DECLARATIONS\s*)");
   rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeAll);
   if (rxit != cregex_iterator()) {
     cmatch match = *rxit;
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Get just the declarations section of the config file code
-  regex rx_confCodeEndDecl("\\s*\\/\\/\\s*END\\s*DECLARATIONS");
+  regex rx_confCodeEndDecl(R"(\s*\/\/\s*END\s*DECLARATIONS)");
   const char* confDecls = code_confAll.c_str();
   rxit = cregex_iterator(confDecls, confDecls + strlen(confDecls), rx_confCodeEndDecl);
   if (rxit != cregex_iterator()) {
@@ -194,7 +194,7 @@ int main(int argc, char *argv[]) {
 
   // Get just the definitions section of the config file code (then cut off the trailing unrelated code)
   string code_confDefnsDirty;
-  regex rx_confCodeBegDefn("\\/\\/\\s*BEGIN\\s*DEFINITIONS\\s*");
+  regex rx_confCodeBegDefn(R"(\/\/\s*BEGIN\s*DEFINITIONS\s*)");
   rxit = cregex_iterator(confDecls, confDecls + strlen(confDecls), rx_confCodeBegDefn);
   if (rxit != cregex_iterator()) {
     cmatch match = *rxit;
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
          << " Make sure that comment exists and is formatted and placed correctly." << endl;
     return -9;
   }
-  regex rx_confCodeEndDefn("\\s*\\/\\/\\s*END\\s*DEFINITIONS");
+  regex rx_confCodeEndDefn(R"(\s*\/\/\s*END\s*DEFINITIONS)");
   const char* confDefnsDirty = code_confDefnsDirty.c_str();
   rxit = cregex_iterator(confDefnsDirty, confDefnsDirty + strlen(confDefnsDirty), rx_confCodeEndDefn);
   if (rxit != cregex_iterator()) {
@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
   vector<string> compTypeNames;
 
   // Fill compTypes' 'name' fields with the user's component type names from the config file.
-  regex rx_confCompDecls("(?:class|struct)\\s*(\\w*)\\s*:\\s*public\\s*Component\\s*<\\s*\\w*\\s*>");
+  regex rx_confCompDecls(R"((?:class|struct)\s*(\w*)\s*:\s*public\s*Component\s*<\s*\w*\s*>)");
   for (auto it = cregex_iterator(decls, decls + strlen(decls), rx_confCompDecls); it != cregex_iterator(); ++it) {
     cmatch match = *it;
     CompType newType;
@@ -240,10 +240,10 @@ int main(int argc, char *argv[]) {
   }
 
   // Fill out compTypes' constructorArgs fields using those names, and then fill all the fields we can at this point.
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     stringstream regexBuilder;
-    regexBuilder << name << "\\s*::\\s*" << name;
-    regexBuilder << "\\s*\\(\\s*(.*)\\s*\\)";
+    regexBuilder << name << R"(\s*::\s*)" << name;
+    regexBuilder << R"(\s*\(\s*(.*)\s*\))";
     regex rx_confCompCnstrctr(regexBuilder.str());
     auto it = cregex_iterator(defns, defns + strlen(defns), rx_confCompCnstrctr);
     if (it != cregex_iterator()) {
@@ -258,11 +258,11 @@ int main(int argc, char *argv[]) {
   }
 
   // Fill compTypes' 'prerequisiteComps' fields given the user's calls to the EZECS_COMPONENT_DEPENDENCIES macro
-  regex rx_confCompDep("EZECS_COMPONENT_DEPENDENCIES\\s*\\((\\s*\\w*(?:\\s*,\\s*\\w+\\s*)*\\s*)\\)");
+  regex rx_confCompDep(R"(EZECS_COMPONENT_DEPENDENCIES\s*\((\s*\w*(?:\s*,\s*\w+\s*)*\s*)\))");
   for (auto it = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCompDep); it != cregex_iterator(); ++it) {
     cmatch match = *it;
     stringstream ss_depArgs(match[1].str());
-    CompType* compType = NULL;
+    CompType* compType = nullptr;
     string token;
     bool first = true;
     while(std::getline(ss_depArgs, token, ',')) {
@@ -291,8 +291,8 @@ int main(int argc, char *argv[]) {
   }
 
   // Fill compTypes' 'dependentComps' fields given the now-filled 'prerequisiteComps' fields
-  for (auto name : compTypeNames) {
-    for (auto preq : compTypes.at(name).prerequisiteComps) {
+  for (const auto &name : compTypeNames) {
+    for (const auto &preq : compTypes.at(name).prerequisiteComps) {
       compTypes.at(preq).dependentComps.push_back(name);
     }
   }
@@ -300,7 +300,7 @@ int main(int argc, char *argv[]) {
   // Build the string that goes in the component enumerators spot
   stringstream ss_code_compEnum;
   int i = 0;
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     ss_code_compEnum << TAB TAB << compTypes.at(name).enumName << " = 1 << " << ++i << "," << endl;
   }
   ss_code_compEnum << TAB TAB << "MAX_COMPONENT_ENUM = 1 << " << ++i << endl;
@@ -313,12 +313,12 @@ int main(int argc, char *argv[]) {
 
   // Build the string that defines the component dependency relationships
   stringstream ss_code_compDepends;
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     // required comps
     string requiredComps;
     stringstream ss_requiredComps;
     ss_requiredComps << enumStringIzer("Existence");
-    for (auto comp : compTypes.at(name).prerequisiteComps) {
+    for (const auto &comp : compTypes.at(name).prerequisiteComps) {
       ss_requiredComps << " | " << compTypes.at(comp).enumName;
     }
     requiredComps = ss_requiredComps.str();
@@ -331,7 +331,7 @@ int main(int argc, char *argv[]) {
       dependentComps = "NONE";
     } else {
       stringstream ss_dependentComps;
-      for (auto comp : compTypes.at(name).dependentComps) {
+      for (const auto &comp : compTypes.at(name).dependentComps) {
         ss_dependentComps << compTypes.at(comp).enumName
                           << (comp == compTypes.at(name).dependentComps.back() ? "" : " | ");
       }
@@ -349,7 +349,7 @@ int main(int argc, char *argv[]) {
   // Build the strings that are used in the component dependency getter switch-case statements
   stringstream ss_code_compGetReq;
   stringstream ss_code_compGetDep;
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     ss_code_compGetReq << TAB TAB TAB "case " << compTypes.at(name).enumName << ": return "
                        << name << "::requiredComps;" << endl;
     ss_code_compGetDep << TAB TAB TAB "case " << compTypes.at(name).enumName << ": return "
@@ -360,18 +360,18 @@ int main(int argc, char *argv[]) {
 
   // Build the string that declares collections, methods, and stuff in ecsState.generated.hpp
   stringstream ss_code_stateHOut;
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     ss_code_stateHOut << compTypes.at(name).stateH_prv << endl;
   }
   ss_code_stateHOut << endl << TAB TAB << "public:" << endl;
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     ss_code_stateHOut << endl << compTypes.at(name).stateH_pub;
   }
   string code_stateHOut = ss_code_stateHOut.str();
 
   // Build a string for the stuff in the 'clear all components' loop
   stringstream ss_code_clearCompLoop;
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     string enm = compTypes.at(name).enumName;
     ss_code_clearCompLoop
         << TAB TAB "remCompNoChecks(comps_" << name << ", existence, id, remCallbacks_" << name << ");" << endl;
@@ -380,7 +380,7 @@ int main(int argc, char *argv[]) {
 
   // Build a string for the entity likeness callback registration
   stringstream ss_code_cllbkReg;
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     ss_code_cllbkReg << TAB TAB "if (likeness & " << compTypes.at(name).enumName << ") {" << endl;
     ss_code_cllbkReg << TAB TAB TAB "registerAddCallback" << name << "(additionDelegate);" << endl;
     ss_code_cllbkReg << TAB TAB TAB "registerRemCallback" << name << "(removalDelegate);" << endl;
@@ -390,7 +390,7 @@ int main(int argc, char *argv[]) {
 
   // Build a string for the collection manipulation methods
   stringstream ss_code_compCollDefns;
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     ss_code_compCollDefns << compTypes.at(name).stateC << endl;
   }
   string code_compCollDefns = ss_code_compCollDefns.str();
@@ -399,30 +399,30 @@ int main(int argc, char *argv[]) {
   unsigned long lineCount = 0;
 
   // replace "appears here" comments in the input file strings with code (next four sections)
-  regex rx_compIncls("\\/\\/ EXTRA INCLUDES APPEAR HERE");
-  regex rx_compDecls("  \\/\\/ COMPONENT DECLARATIONS APPEAR HERE");
-  regex rx_compEnums("    \\/\\/ COMPONENT TYPE ENUMERATORS APPEAR HERE");
-  regex rx_numCompTypes("  \\/\\/ NUMBER OF COMPONENT TYPES APPEARS HERE");
+  regex rx_compIncls(R"(\/\/ EXTRA INCLUDES APPEAR HERE)");
+  regex rx_compDecls(R"(  \/\/ COMPONENT DECLARATIONS APPEAR HERE)");
+  regex rx_compEnums(R"(    \/\/ COMPONENT TYPE ENUMERATORS APPEAR HERE)");
+  regex rx_numCompTypes(R"(  \/\/ NUMBER OF COMPONENT TYPES APPEARS HERE)");
   string str_compsHOut = replaceAndCount(str_compsHIn, rx_compIncls, code_includes, lineCount);
   str_compsHOut = replaceAndCount(str_compsHOut, rx_compDecls, TAB + code_confDecls, lineCount);
   str_compsHOut = replaceAndCount(str_compsHOut, rx_compEnums, code_compEnum, lineCount);
   str_compsHOut = replaceAndCount(str_compsHOut, rx_numCompTypes, code_numComps, lineCount);
 
-  regex rx_compDepDef("  \\/\\/ COMPONENT DEPENDENCY FIELD DEFINITIONS APPEAR HERE");
-  regex rx_compMetDef("  \\/\\/ COMPONENT METHOD DEFINITIONS APPEAR HERE");
-  regex rx_compGetReqDef("      \\/\\/ COMPONENT REQUIREMENTS GETTER CASES APPEAR HERE");
-  regex rx_compGetDepDef("      \\/\\/ COMPONENT DEPENDENTS GETTER CASES APPEAR HERE");
+  regex rx_compDepDef(R"(  \/\/ COMPONENT DEPENDENCY FIELD DEFINITIONS APPEAR HERE)");
+  regex rx_compMetDef(R"(  \/\/ COMPONENT METHOD DEFINITIONS APPEAR HERE)");
+  regex rx_compGetReqDef(R"(      \/\/ COMPONENT REQUIREMENTS GETTER CASES APPEAR HERE)");
+  regex rx_compGetDepDef(R"(      \/\/ COMPONENT DEPENDENTS GETTER CASES APPEAR HERE)");
   string str_compsCOut = replaceAndCount(str_compsCIn, rx_compDepDef, code_compDepends, lineCount);
   str_compsCOut = replaceAndCount(str_compsCOut, rx_compMetDef, TAB + code_confDefns, lineCount);
   str_compsCOut = replaceAndCount(str_compsCOut, rx_compGetReqDef, code_compGetReq, lineCount);
   str_compsCOut = replaceAndCount(str_compsCOut, rx_compGetDepDef, code_compGetDep, lineCount);
 
-  regex rx_compCollDecls("      \\/\\/ COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE");
+  regex rx_compCollDecls(R"(      \/\/ COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE)");
   string str_stateHOut = replaceAndCount(str_stateHIn, rx_compCollDecls, code_stateHOut, lineCount);
 
-  regex rx_compClrLoop("    \\/\\/ A LOOP TO CLEAR ALL COMPONENTS APPEARS HERE");
-  regex rx_compRegCllbks("    \\/\\/ CODE TO REGISTER THE APPROPRIATE CALLBACKS APPEARS HERE");
-  regex rx_compCollDef("  \\/\\/ COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE");
+  regex rx_compClrLoop(R"(    \/\/ A LOOP TO CLEAR ALL COMPONENTS APPEARS HERE)");
+  regex rx_compRegCllbks(R"(    \/\/ CODE TO REGISTER THE APPROPRIATE CALLBACKS APPEARS HERE)");
+  regex rx_compCollDef(R"(  \/\/ COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE)");
   string str_stateCOut = replaceAndCount(str_stateCIn, rx_compClrLoop, code_clearCompLoop, lineCount);
   str_stateCOut = replaceAndCount(str_stateCOut, rx_compRegCllbks, code_cllbkReg, lineCount);
   str_stateCOut = replaceAndCount(str_stateCOut, rx_compCollDef, code_compCollDefns, lineCount);
@@ -458,16 +458,16 @@ int main(int argc, char *argv[]) {
   stateCOut.close();
 
   // Give some feedback
-  for (auto name : compTypeNames) {
+  for (const auto &name : compTypeNames) {
     stringstream colName, colReq, colDep, colCon;
     colName << left << name << " [" << compTypes.at(name).enumName << "]";
     colReq << "REQ(";
-    for (auto preq : compTypes.at(name).prerequisiteComps) {
+    for (const auto &preq : compTypes.at(name).prerequisiteComps) {
       colReq << preq << (preq == compTypes.at(name).prerequisiteComps.back() ? "" : ", ");
     }
     colReq << ")";
     colDep << "DEP(";
-    for (auto depn : compTypes.at(name).dependentComps) {
+    for (const auto &depn : compTypes.at(name).dependentComps) {
       colDep << depn << (depn == compTypes.at(name).dependentComps.back() ? "" : ", ");
     }
     colDep << ")";

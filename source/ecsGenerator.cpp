@@ -40,11 +40,10 @@
 using namespace std;
 
 #define TAB "  "
-const string pathSeperator =
 #ifdef _WIN32
-"\\";
+const char *slash = "\\";
 #else
-"/";
+const char *slash = "/";
 #endif
 
 // Prototype helper methods
@@ -53,7 +52,7 @@ string genStateHPrivatSection(const string &compType);
 string genStateHPublicSection(const string &compType, const string &compArgs);
 string genStateCDefns(const string &compType, const string &compArgs, const string &compArgsNameOnly);
 string getNamesFromArgList(string argList);
-string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& count);
+string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& numLines);
 unsigned long occurrences(const string& s, char c);
 /*
  * CompType holds everything we need to know about a component type in order to generate all the associated code.
@@ -75,35 +74,40 @@ struct CompType {
 
 /*
  * main is called by CMake
- * It takes an input directory, an output directory, and a configuration file.
+ * It takes an input directory, an output directory, and 1 or more configuration files
  */
 int main(int argc, char *argv[]) {
-  // CMake should provide exactly 3 arguments after the command name (4 total).
+  // CMake should provide 3 or more arguments after the command name (so 4 or more total).
   if (argc < 4) {
     cerr << "ecsGenerator: Did not receive correct number of arguments." << endl;
     return -1;
   }
 
   // set up all file names for reading and writing
-  string sourceDir = argv[1];
+  string srcDir = argv[1];
   string binDir = argv[2];
-  string fileName_configIn = argv[3];
-  string fileName_compsHIn = sourceDir + pathSeperator + "ecsComponents.hpp";
-  string fileName_compsCIn = sourceDir + pathSeperator + "ecsComponents.cpp";
-  string fileName_compsHOut = binDir + pathSeperator + "ecsComponents.generated.hpp";
-  string fileName_compsCOut = binDir + pathSeperator + "ecsComponents.generated.cpp";
-  string fileName_stateHIn = sourceDir + pathSeperator + "ecsState.hpp";
-  string fileName_stateCIn = sourceDir + pathSeperator + "ecsState.cpp";
-  string fileName_stateHOut = binDir + pathSeperator + "ecsState.generated.hpp";
-  string fileName_stateCOut = binDir + pathSeperator + "ecsState.generated.cpp";
+  vector<string> fileNames_configsIn(argc - 3);
+  for (uint_fast32_t i = 3; i < argc; ++i) { fileNames_configsIn[i - 3] = argv[i]; }  
+  string fileName_compsHIn = srcDir + slash + "ecsComponents.hpp";
+  string fileName_compsCIn = srcDir + slash + "ecsComponents.cpp";
+  string fileName_compsHOut = binDir + slash + "ecsComponents.generated.hpp";
+  string fileName_compsCOut = binDir + slash + "ecsComponents.generated.cpp";
+  string fileName_stateHIn = srcDir + slash + "ecsState.hpp";
+  string fileName_stateCIn = srcDir + slash + "ecsState.cpp";
+  string fileName_stateHOut = binDir + slash + "ecsState.generated.hpp";
+  string fileName_stateCOut = binDir + slash + "ecsState.generated.cpp";
 
   // read in and store all input files (next five sections of code)
-  ifstream configIn(fileName_configIn);
-  if (!configIn) { return -2; }
-  stringstream ss_configIn;
-  ss_configIn << configIn.rdbuf();
-  string str_configIn(ss_configIn.str());
-  configIn.close();
+  vector<string> str_configsIn;
+  str_configsIn.reserve(fileNames_configsIn.size());
+  for (const auto &fileName : fileNames_configsIn) {
+	  ifstream configIn(fileName);
+	  if (!configIn) { return -2; }
+	  stringstream ss_configIn;
+	  ss_configIn << configIn.rdbuf();
+	  str_configsIn.emplace_back(ss_configIn.str());
+	  configIn.close();
+  }
 
   ifstream compsHIn(fileName_compsHIn);
   if (!compsHIn) { return -3; }
@@ -133,20 +137,57 @@ int main(int argc, char *argv[]) {
   string str_stateCIn(ss_stateCIn.str());
   stateCIn.close();
 
-  /*
-   * code_includes will be filled with the include directives from the config file
-   * code_confDecls will be filled with the component declarations from the config file
-   * code_confDefns will be filled with the component definitions from the config file
-   */
-  string code_includes, code_confDecls, code_confDefns;
+  // /*
+  //  * codes_includes will be filled with the include directives from the config files
+  //  * codes_confDecls will be filled with the component declarations from the config files
+  //  * codes_confDefns will be filled with the component definitions from the config files
+  //  */
+  // vector<string> codes_includes(str_configsIn.size());
+  // vector<string> code_confDecls(str_configsIn.size());
+  // vector<string> code_confDefns(str_configsIn.size());
+  //
+  // for (uint_fast32_t i = 0; i < str_configsIn.size(); ++i) {
+	//   // Get the entire block of code comprising the include directives
+	//   regex rx_confCodeInclBegin(R"(\/\/\s*BEGIN\s*INCLUDES\s*)");
+	//   const char *confIn = str_configsIn[0].c_str();
+	//   auto rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeInclBegin);
+	//   if (rxit != cregex_iterator()) {
+	// 	  cmatch match = *rxit;
+	// 	  code = str_configsIn[0].substr((size_t)match.position() + match.length(), str_configsIn[0].length());
+	//   } else {
+	// 	  cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN INCLUDES' :"
+	// 	       << " Make sure that comment exists and is formatted and placed correctly." << endl;
+	// 	  return -7;
+	//   }
+	//
+	//   // Get just the declarations section of the config file code
+	//   regex rx_confCodeInclEnd(R"(\s*\/\/\s*END\s*INCLUDES)");
+	//   const char* confIncludes = code.c_str();
+	//   rxit = cregex_iterator(confIncludes, confIncludes + strlen(confIncludes), rx_confCodeInclEnd);
+	//   if (rxit != cregex_iterator()) {
+	// 	  cmatch match = *rxit;
+	// 	  code = code.substr(0, (size_t)match.position());
+	//   } else {
+	// 	  cerr << "Parsing provided ezecs config file: Could not identify comment '// END INCLUDES' :"
+	// 	       << " Make sure that comment exists and is formatted and placed correctly." << endl;
+	// 	  return -8;
+	//   }
+  // }
+
+	/*
+	* code_includes will be filled with the include directives from the config file
+	* code_confDecls will be filled with the component declarations from the config file
+	* code_confDefns will be filled with the component definitions from the config file
+	*/
+	string code_includes, code_confDecls, code_confDefns;
 
   // Get the entire block of code comprising the include directives
   regex rx_confCodeInclBegin(R"(\/\/\s*BEGIN\s*INCLUDES\s*)");
-  const char *confIn = str_configIn.c_str();
+  const char *confIn = str_configsIn[0].c_str();
   auto rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeInclBegin);
   if (rxit != cregex_iterator()) {
     cmatch match = *rxit;
-    code_includes = str_configIn.substr((size_t)match.position() + match.length(), str_configIn.length());
+    code_includes = str_configsIn[0].substr((size_t)match.position() + match.length(), str_configsIn[0].length());
   } else {
     cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN INCLUDES' :"
          << " Make sure that comment exists and is formatted and placed correctly." << endl;
@@ -172,7 +213,7 @@ int main(int argc, char *argv[]) {
   rxit = cregex_iterator(confIn, confIn + strlen(confIn), rx_confCodeAll);
   if (rxit != cregex_iterator()) {
     cmatch match = *rxit;
-    code_confAll = str_configIn.substr((size_t)match.position() + match.length(), str_configIn.length());
+    code_confAll = str_configsIn[0].substr((size_t)match.position() + match.length(), str_configsIn[0].length());
   } else {
     cerr << "Parsing provided ezecs config file: Could not identify comment '// BEGIN DECLARATIONS' :"
          << " Make sure that comment exists and is formatted and placed correctly." << endl;
@@ -265,10 +306,10 @@ int main(int argc, char *argv[]) {
     CompType* compType = nullptr;
     string token;
     bool first = true;
-    while(std::getline(ss_depArgs, token, ',')) {
+    while(getline(ss_depArgs, token, ',')) {
       token.erase( // remove whitespaces from string
-          std::remove_if( token.begin(), token.end(), []( char ch ) {
-            return std::isspace<char>( ch, std::locale::classic() );
+          remove_if( token.begin(), token.end(), []( char ch ) {
+            return isspace<char>( ch, locale::classic() );
           } ), token.end() );
       if (first) {
         first = false;
@@ -569,8 +610,8 @@ string getNamesFromArgList(string argList) {
 /*
  * A helper to keep track of how many lines of code have been inserted using regex_replace
  */
-string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& count) {
-  count += std::count(reStr.begin(), reStr.end(), '\n');
+string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& numLines) {
+	numLines += count(reStr.begin(), reStr.end(), '\n');
   return regex_replace(inStr, rx, reStr);
 }
 

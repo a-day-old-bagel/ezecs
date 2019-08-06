@@ -6,10 +6,14 @@
 
 set( TEST_TARGET_NAME ezecsTestTiered )
 
-set( EZECS_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp )
+add_subdirectory( core )
+add_subdirectory( shell )
+add_subdirectory( valence )
+
+message( STATUS "Ezecs is using the following configs: ${EZECS_CONFIG_FILE}" )
 set( EZECS_TARGET_PREFIX ${TEST_TARGET_NAME}_ )
 set( EZECS_LINK_TO_LIBS ) # empty in this case
-add_subdirectory( ${PROJECT_SOURCE_DIR}/source ${PROJECT_BINARY_DIR}/test/tiered/generated )
+add_subdirectory( ${EZECS_SOURCE_DIR}/source ${CMAKE_CURRENT_BINARY_DIR}/generated )
 
 add_executable( ${TEST_TARGET_NAME} main.cpp )
 target_link_libraries( ${TEST_TARGET_NAME} ${TEST_TARGET_NAME}_ecs )

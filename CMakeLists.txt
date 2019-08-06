@@ -23,6 +23,7 @@ else( EZECS_SET_PATH_ONLY )
       message( WARNING "EZECS_CONFIG_FILE path is being overwritten by the ezecs test case! \
              Turn off option EZECS_BUILD_TEST if this is a problem." )
     endif()
+    set( EZECS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE STRING "Path to use for EZECS" )
     add_subdirectory( tests )
   else ( EZECS_BUILD_TEST )
     add_subdirectory( source )

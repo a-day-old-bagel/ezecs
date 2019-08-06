@@ -225,12 +225,12 @@ int main(int argc, char *argv[]) {
   }
   
   // add all the results from the different configuration files together
-  stringstream all_confs, all_includes, all_confDecls, all_confDefns;
+  stringstream all_confs, all_includes, all_compDecls, all_compDefns;
 	for (uint_fast32_t i = 0; i < str_configsIn.size(); ++i) {
-		all_confs << str_configsIn[i];
-		all_includes << codes_includes[i];
-		all_confDecls << codes_confDecls[i];
-		all_confDefns << codes_confDefns[i];
+		all_confs << (i ? "\n\n" : "") << str_configsIn[i];
+		all_includes << (i ? "\n\n" : "") << codes_includes[i];
+		all_compDecls << (i ? "\n\n  " : "") << codes_confDecls[i];
+		all_compDefns << (i ? "\n\n  " : "") << codes_confDefns[i];
 	}
 	
 	/*
@@ -238,8 +238,8 @@ int main(int argc, char *argv[]) {
    */
 	string sconfs = all_confs.str();
 	string sincls = all_includes.str();
-	string sdecls = all_confDecls.str();
-	string sdefns = all_confDefns.str();
+	string sdecls = all_compDecls.str();
+	string sdefns = all_compDefns.str();
 	const char* confs = sconfs.c_str();
 	const char* incls = sincls.c_str();
 	const char* decls = sdecls.c_str();

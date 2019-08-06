@@ -27,9 +27,7 @@
 
 // BEGIN INCLUDES
 
-/*
- * Libraries and stuff that your components need are to be included here.
- */
+#include <cmath>
 
 // END INCLUDES
 
@@ -39,43 +37,18 @@ namespace {
 
   // BEGIN DECLARATIONS
 
-  struct FooComp : public Component<FooComp> {
-    int fakeA, fakeB;
-    FooComp(int fakeA, int fakeB);
+  struct DerpComp : public Component<DerpComp> {
+    char bics, fountains, chalk;
+    DerpComp(char bics, char fountains, char chalk);
   };
-  EZECS_COMPONENT_DEPENDENCIES(FooComp)
-
-  class Bar_Comp : public Component<Bar_Comp> {
-    public:
-      float number;
-      Bar_Comp(float number);
-  };
-  EZECS_COMPONENT_DEPENDENCIES(Bar_Comp, FooComp)
-
-  struct MehComp : public Component<MehComp> {
-    char boo, hoo;
-    MehComp(char boo, char hoo);
-  };
-  EZECS_COMPONENT_DEPENDENCIES(MehComp, FooComp, Bar_Comp)
-  
-  struct EmptyComp : public Component<EmptyComp> {
-    EmptyComp();
-  };
+  EZECS_COMPONENT_DEPENDENCIES(DerpComp, MehComp)
 
   // END DECLARATIONS
 
   // BEGIN DEFINITIONS
 
-  FooComp::FooComp(int fakeA, int fakeB)
-      : fakeA(fakeA), fakeB(fakeB) {}
-
-  Bar_Comp::Bar_Comp(float number)
-      : number(number) {}
-
-  MehComp::MehComp(char boo, char hoo)
-      : boo(boo), hoo(hoo) {}
-  
-  EmptyComp::EmptyComp() {}
+  DerpComp::DerpComp(char bics, char fountains, char chalk)
+      : bics(bics), fountains(fountains), chalk(chalk) {}
 
   // END DEFINITIONS
 

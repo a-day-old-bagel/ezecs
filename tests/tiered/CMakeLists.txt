@@ -13,7 +13,7 @@ add_subdirectory( valence )
 message( STATUS "Ezecs is using the following configs: ${EZECS_CONFIG_FILE}" )
 set( EZECS_TARGET_PREFIX ${TEST_TARGET_NAME}_ )
 set( EZECS_LINK_TO_LIBS ) # empty in this case
-add_subdirectory( ${EZECS_SOURCE_DIR}/source ${CMAKE_CURRENT_BINARY_DIR}/generated )
+add_subdirectory( ${EZECS_SOURCE_DIR}/source ${CMAKE_CURRENT_BINARY_DIR}/generated ) # Don't normally add "/source"
 
 add_executable( ${TEST_TARGET_NAME} main.cpp )
 target_link_libraries( ${TEST_TARGET_NAME} ${TEST_TARGET_NAME}_ecs )

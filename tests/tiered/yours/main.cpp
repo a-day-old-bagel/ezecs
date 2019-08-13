@@ -22,65 +22,14 @@
  */
 
 #include <chrono>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include "ezecs.hpp"
+
+#include "coreSystems.hpp"
 
 #define GET_TIME std::chrono::high_resolution_clock::now();
 #define DURATION std::chrono::duration<double, std::milli>
 #define CHECK(compOpReturn) EZECS_CHECK_PRINT(EZECS_ERR(compOpReturn))
 
 using namespace ezecs;
-
-struct TestSystem : public System<TestSystem> {
-  std::stringstream outputLog;
-  std::vector<compMask> requiredComponents = {
-      FOOCOMP | BAR_COMP,
-      MEHCOMP
-  };
-  TestSystem(State *state) : System(state) {
-
-  }
-  bool onInit() {
-    registries[0].discoverHandler = RTU_MTHD_DLGT(&TestSystem::onDiscoverFooBar, this);
-    registries[0].forgetHandler = RTU_MTHD_DLGT(&TestSystem::onForgetFooBar, this);
-    registries[1].discoverHandler = RTU_MTHD_DLGT(&TestSystem::onDiscoverMeh, this);
-    registries[1].forgetHandler = RTU_MTHD_DLGT(&TestSystem::onForgetMeh, this);
-    outputLog << "TEST SYSTEM INITIALIZED." << std::endl;
-    return true;
-  }
-  void onTick(double dt) {
-    outputLog << "TEST SYSTEM TICK TIME (ms): " << dt << "; bars say: ";
-    for (auto id : registries[0].ids) {
-      Bar_Comp* bar;
-      state->getBar_Comp(id, &bar);
-      bar->number += 0.2f;
-      outputLog << bar->number << ", ";
-    }
-    outputLog << std::endl;
-  }
-  void deInit() {
-    outputLog << "TEST SYSTEM DESTROYED." << std::endl;
-    std::cout << outputLog.str();
-  }
-  bool onDiscoverFooBar(const entityId &id) {
-    outputLog << "TEST SYSTEM DISCOVERED A FOOBAR: " << id << std::endl;
-    return true;
-  }
-  bool onForgetFooBar(const entityId &id) {
-    outputLog << "TEST SYSTEM FORGOT A FOOBAR: " << id << std::endl;
-    return true;
-  }
-  bool onDiscoverMeh(const entityId &id) {
-    outputLog << "TEST SYSTEM DISCOVERED A MEH: " << id << std::endl;
-    return true;
-  }
-  bool onForgetMeh(const entityId &id) {
-    outputLog << "TEST SYSTEM FORGOT A MEH: " << id << std::endl;
-    return true;
-  }
-};
 
 int main(int argc, char *argv[]) {
   State state;

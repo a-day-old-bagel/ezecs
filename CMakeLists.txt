@@ -9,6 +9,9 @@ set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 if (NOT TARGET realtimeutils)
   add_subdirectory( realtimeutils )
+  set( REALTIMEUTILS_BUILT TRUE PARENT_SCOPE )
+else()
+  set( REALTIMEUTILS_BUILT FALSE PARENT_SCOPE )
 endif()
 
 option( EZECS_SET_PATH_ONLY "Only set the variables 'EZECS_SOURCE_DIR' and 'EZECS_BINARY_DIR' - don't build." OFF )

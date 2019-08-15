@@ -23,20 +23,20 @@ configure_file( ${EZECS_INPUT_DIR}/ecsKvMap.hpp ${EZECS_OUTPUT_DIR}/ecsKvMap.hpp
 configure_file( ${EZECS_INPUT_DIR}/ecsSystem.hpp ${EZECS_OUTPUT_DIR}/ecsSystem.hpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ezecs.hpp ${EZECS_OUTPUT_DIR}/ezecs.hpp COPYONLY )
 
-add_executable( ${EZECS_TARGET_PREFIX}generator ecsGenerator.cpp )
-set_property( TARGET ${EZECS_TARGET_PREFIX}generator  PROPERTY CXX_STANDARD 11 )
-set_property( TARGET ${EZECS_TARGET_PREFIX}generator  PROPERTY CXX_STANDARD_REQUIRED ON )
+add_executable( ezecs_generator ecsGenerator.cpp )
+set_property( TARGET ezecs_generator  PROPERTY CXX_STANDARD 11 )
+set_property( TARGET ezecs_generator  PROPERTY CXX_STANDARD_REQUIRED ON )
 add_custom_command (
     OUTPUT
       ${EZECS_OUTPUT_DIR}/ecsComponents.generated.hpp
       ${EZECS_OUTPUT_DIR}/ecsComponents.generated.cpp
       ${EZECS_OUTPUT_DIR}/ecsState.generated.hpp
       ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
-    COMMAND ${EZECS_TARGET_PREFIX}generator
+    COMMAND ezecs_generator
       ${EZECS_INPUT_DIR}
       ${EZECS_OUTPUT_DIR}
       ${EZECS_CONFIG_FILE}
-    DEPENDS ${EZECS_TARGET_PREFIX}generator ${EZECS_CONFIG_FILE}
+    DEPENDS ezecs_generator ${EZECS_CONFIG_FILE}
 )
 
 include_directories ( ${EZECS_OUTPUT_DIR} )

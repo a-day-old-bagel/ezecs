@@ -41,6 +41,7 @@
 
 // #define EZECS_CHECK_PRINT(res) if (res.isError()) { printf("%s\n", res.toString().c_str()); }
 #define EZECS_CHECK_PRINT(res) if (res.isError()) { rtu::topics::publishf("err", "%s\n", res.toString().c_str()); }
+#define EZECS_FATAL_PRINT(res) if (res.isError()) { rtu::topics::publishf("fat", "%s\n", res.toString().c_str()); }
 
 namespace ezecs {
   std::string resolveErrorToString(CompOpReturn err);

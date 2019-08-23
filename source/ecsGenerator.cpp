@@ -62,6 +62,10 @@ struct CompType {
   string constructorArgs, constructorArgsNamesOnly, enumName, stateH_prv, stateH_pub, stateC;
   vector<string> prerequisiteComps;
   vector<string> dependentComps;
+  
+  struct Attribs {
+  	bool persistent = false;
+  } attribs;
 
   void resolveSimpleStrings() {
     enumName = enumStringIzer(name);
@@ -313,6 +317,39 @@ int main(int argc, char *argv[]) {
     }
   }
 
+	// Fill compTypes' 'attribs.persistent' fields given the user's calls to the EZECS_COMPONENT_PERSISTENCE macro
+	regex rx_confCompAttribs(R"(EZECS_COMPONENT_ATTRIBS\s*\((\s*\w*(?:\s*,\s*\w+\s*)*\s*)\))");
+	for (auto it = cregex_iterator(confs, confs + strlen(confs), rx_confCompAttribs); it != cregex_iterator(); ++it) {
+		cmatch match = *it;
+		stringstream ss_depArgs(match[1].str());
+		CompType* compType = nullptr;
+		string token;
+		bool first = true;
+		while(getline(ss_depArgs, token, ',')) {
+			token.erase( // remove whitespaces from string
+						remove_if( token.begin(), token.end(), []( char ch ) {
+							return isspace<char>( ch, locale::classic() );
+						} ), token.end() );
+			if (first) {
+				first = false;
+				try {
+					compType = &compTypes.at(token);
+				} catch (...) {
+					cerr << "Invalid use of EZECS_COMPONENT_ATTRIBS (invalid first arg given: '" << token << "')" << endl;
+					return -14;
+				}
+			} else {
+				if (token == "persistent") {
+					compType->attribs.persistent = true;
+				} else {
+					cerr << "Invalid use of EZECS_COMPONENT_ATTRIBS (first arg: '" << compType->name
+					     << "'. invalid arg given: '" << token << "'.)" << endl;
+					return -15;
+				}
+			}
+		}
+	}
+
   // Fill compTypes' 'dependentComps' fields given the now-filled 'prerequisiteComps' fields
   for (const auto &name : compTypeNames) {
     for (const auto &preq : compTypes.at(name).prerequisiteComps) {
@@ -331,8 +368,19 @@ int main(int argc, char *argv[]) {
 
   // Build the string that declares the number of user-made components
   stringstream ss_code_numComps;
-  ss_code_numComps << TAB "const uint8_t numCompTypes = " << i << ";" << endl;
+  ss_code_numComps << TAB "constexpr uint8_t numCompTypes = " << i << ";" << endl;
   string code_numComps = ss_code_numComps.str();
+  
+  // Build the string that declares the component attribute masks
+  stringstream ss_code_compAttrMasks;
+  ss_code_compAttrMasks << TAB "constexpr compMask persistenceMask = 0";
+  for (const auto &name : compTypeNames) {
+  	if (compTypes.at(name).attribs.persistent) {
+  		ss_code_compAttrMasks << " | " << compTypes.at(name).enumName;
+  	}
+  }
+  ss_code_compAttrMasks << ";" << endl;
+  string code_compAttrMasks = ss_code_compAttrMasks.str();
 
   // Build the string that defines the component dependency relationships
   stringstream ss_code_compDepends;
@@ -425,11 +473,11 @@ int main(int argc, char *argv[]) {
   regex rx_compIncls(R"(\/\/ EXTRA INCLUDES APPEAR HERE)");
   regex rx_compDecls(R"(  \/\/ COMPONENT DECLARATIONS APPEAR HERE)");
   regex rx_compEnums(R"(    \/\/ COMPONENT TYPE ENUMERATORS APPEAR HERE)");
-  regex rx_numCompTypes(R"(  \/\/ NUMBER OF COMPONENT TYPES APPEARS HERE)");
+  regex rx_compCntAndAttrs(R"(  \/\/ COMPONENT TYPE COUNTS AND ATTRIBUTE MASKS APPEAR HERE)");
 	string str_compsHOut = replaceAndCount(str_compsHIn, rx_compIncls, sincls, lineCount);
 	str_compsHOut = replaceAndCount(str_compsHOut, rx_compDecls, TAB + sdecls, lineCount);
   str_compsHOut = replaceAndCount(str_compsHOut, rx_compEnums, code_compEnum, lineCount);
-  str_compsHOut = replaceAndCount(str_compsHOut, rx_numCompTypes, code_numComps, lineCount);
+  str_compsHOut = replaceAndCount(str_compsHOut, rx_compCntAndAttrs, code_numComps + code_compAttrMasks, lineCount);
 
   regex rx_compDepDef(R"(  \/\/ COMPONENT DEPENDENCY FIELD DEFINITIONS APPEAR HERE)");
   regex rx_compMetDef(R"(  \/\/ COMPONENT METHOD DEFINITIONS APPEAR HERE)");
@@ -461,22 +509,22 @@ int main(int argc, char *argv[]) {
 
   // write the output file strings to the appropriate files (next four sections of code)
   ofstream compsHOut(fileName_compsHOut);
-  if (!compsHOut) { return -14; }
+  if (!compsHOut) { return -16; }
   compsHOut << hppIntro << str_compsHOut;
   compsHOut.close();
 
   ofstream compsCOut(fileName_compsCOut);
-  if (!compsCOut) { return -15; }
+  if (!compsCOut) { return -17; }
   compsCOut << cppIntro << str_compsCOut;
   compsCOut.close();
 
   ofstream stateHOut(fileName_stateHOut);
-  if (!stateHOut) { return -16; }
+  if (!stateHOut) { return -18; }
   stateHOut << hppIntro << str_stateHOut;
   stateHOut.close();
 
   ofstream stateCOut(fileName_stateCOut);
-  if (!stateCOut) { return -17; }
+  if (!stateCOut) { return -19; }
   stateCOut << cppIntro << str_stateCOut;
   stateCOut.close();
 

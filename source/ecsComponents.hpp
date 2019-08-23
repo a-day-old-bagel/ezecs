@@ -52,10 +52,25 @@
  */
 #define EZECS_COMPONENT_DEPENDENCIES( comp, ... )
 
+/*
+ * EZECS_COMPONENT_ATTRIBS( comp, ... )
+ * Use this macro in a similar fashion to EZECS_COMPONENT_DEPENDENCIES except that EZECS_COMPONENT_ATTRIBS takes first
+ * a component name and then a list of attributes to apply to that component. At this time the following attributes are
+ * available:
+ * 
+ * Persistent:
+ * For example, EZECS_COMPONENT_ATTRIBS( LoadedAsset, persistent )
+ * A component that is persistent, when present in an entity, will prevent that entity from being deleted when the ECS
+ * is cleared. Deletion of such an entity would have to be deliberate and specific. This is useful for data that you
+ * want to be saved across all new games, loaded games or other erasures of the ECS, such as the OS window, graphical
+ * context, or loaded assets, if it happens that you decide to keep such data in a component.
+ */
+#define EZECS_COMPONENT_ATTRIBS( comp, ... )
+
 namespace ezecs {
 
   /*
-   * "compMast" is a bit mask (or set of flags) that is used to represent a set of component types. Each bit corresponds
+   * "compMask" is a bit mask (or set of flags) that is used to represent a set of component types. Each bit corresponds
    * to a single component type.
    * "entityId" is the type used for entity IDs (surprise!).
    */
@@ -107,9 +122,10 @@ namespace ezecs {
 
   /*
    * numCompTypes - how many component types there are, not counting the Existence component type.
+   * persistenceMask - which components need to persist through a clearing of the ECS (for whole-program-lifetime data)
    */
   
-  // NUMBER OF COMPONENT TYPES APPEARS HERE
+  // COMPONENT TYPE COUNTS AND ATTRIBUTE MASKS APPEAR HERE
   
   /*
    * Component dependency getter declarations

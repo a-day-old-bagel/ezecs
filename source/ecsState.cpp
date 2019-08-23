@@ -102,7 +102,7 @@ namespace ezecs {
   void State::clear() {
     std::vector<entityId> idsToErase;
     for (auto pair : comps_Existence) {
-    	if (0 == pair.second.componentsPresent & persistenceMask) {
+    	if ( ! (pair.second.componentsPresent & persistenceMask)) {
 		    idsToErase.push_back(pair.first);
     	}
     }

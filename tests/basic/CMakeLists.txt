@@ -6,7 +6,7 @@
 #    your config file (consider what you had to #include in your config file)
 # 4. Use 'add_subdirectory' on the ezecs directory
 #    (this test file is a little unusual because it adds the ezecs/source directory instead)
-# 5. At this point you'll have access to the ${YOUR_PREFIX}ecs target. Link to it as usual.
+# 5. At this point you'll have access to the ${YOUR_PREFIX}_ecs target. Link to it as usual.
 # 
 # The generated target automatically includes the correct build directory which has the
 # generated files in it, so DO NOT 'include_directories' on the ezecs/source directory,
@@ -16,7 +16,7 @@
 # For example, your CMakeLists.txt might include the following lines:
 #
 # set( EZECS_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/myEcsConfig.hpp )
-# set( EZECS_TARGET_PREFIX ${MY_PREFIX}_ )
+# set( EZECS_TARGET_PREFIX ${MY_PREFIX} )
 # set( EZECS_LINK_TO_LIBS ${MY_LIBS} )
 # add_subdirectory( ${WHEREVER_YOU_PUT_THE_EZECS_SOURCE_FOLDER}/ezecs ${CMAKE_CURRENT_BINARY_DIR}/ezecs )
 # add_executable( myTarget mySource.cpp )

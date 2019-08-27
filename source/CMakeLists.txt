@@ -41,12 +41,12 @@ add_custom_command (
 
 include_directories ( ${EZECS_OUTPUT_DIR} )
 
-add_library( ${EZECS_TARGET_PREFIX}ecs STATIC
+add_library( ${EZECS_TARGET_PREFIX}_ecs STATIC
     ${EZECS_OUTPUT_DIR}/ecsComponents.generated.cpp
     ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
     ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp
 )
-target_link_libraries( ${EZECS_TARGET_PREFIX}ecs ${EZECS_LINK_TO_LIBS} realtimeutils)
-target_include_directories( ${EZECS_TARGET_PREFIX}ecs PUBLIC
+target_link_libraries( ${EZECS_TARGET_PREFIX}_ecs ${EZECS_LINK_TO_LIBS} realtimeutils)
+target_include_directories( ${EZECS_TARGET_PREFIX}_ecs PUBLIC
     ${EZECS_OUTPUT_DIR}
 )

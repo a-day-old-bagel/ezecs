@@ -39,8 +39,12 @@
 #define EZECS_REQUIRE(res) if (res != SUCCESS) { return EZECS_ERR(res); }
 #define EZECS_REPORT(res, msg) if (res != SUCCESS) { return EZECS_MSG(msg); }
 
-// #define EZECS_CHECK_PRINT(res) if (res.isError()) { printf("%s\n", res.toString().c_str()); }
 #define EZECS_CHECK_PRINT(res) if (res.isError()) { rtu::topics::publishf("err", "%s\n", res.toString().c_str()); }
+#define EZECS_FATAL_PRINT(res) if (res.isError()) { rtu::topics::publishf("fat", "%s\n", res.toString().c_str()); }
+
+// Just use this one since the above macros are proving kind of useless
+#define EZECS_VERBOSE(ret) EZECS_CHECK_PRINT(EZECS_ERR(ret))
+#define EZECS_VERBOSE_FATAL(ret) EZECS_FATAL_PRINT(EZECS_ERR(ret))
 
 namespace ezecs {
   std::string resolveErrorToString(CompOpReturn err);

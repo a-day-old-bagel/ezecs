@@ -7,6 +7,7 @@ project( ezecs )
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
+# If ezecs is used by multiple targets with different respective configs, build config-independent code only once.
 if ( NOT TARGET ezecs_extern_interface )
   set( TARGET_PREFIX ezecs_extern )
   # SLIKENET
@@ -26,6 +27,8 @@ if ( NOT TARGET ezecs_extern_interface )
   if ( hasParent )
     set( EZECS_EXTERN_BUILT TRUE PARENT_SCOPE )
   endif ()
+  # Networking code should also only be built once and shared, like the external interface.
+  add_subdirectory( network )
 else ()
   if ( hasParent )
     set( EZECS_EXTERN_BUILT FALSE PARENT_SCOPE )

@@ -4,7 +4,7 @@
 # requires some set of components and then optional higher-level, or valence, parts of the engine or game that require
 # an additional set of components to compliment the core components.
 
-set( EZECS_TARGET_PREFIX ${TEST_TARGET_NAME}_ )
+set( EZECS_TARGET_PREFIX ${TEST_TARGET_NAME} )
 set( EZECS_LINK_TO_LIBS ) # empty in this case
 add_subdirectory( ${EZECS_SOURCE_DIR}/source ${CMAKE_CURRENT_BINARY_DIR}/generated ) # Don't normally add "/source"
 

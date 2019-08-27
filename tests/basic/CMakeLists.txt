@@ -25,7 +25,7 @@
 set( TEST_TARGET_NAME ezecsTestBasic )
 
 set( EZECS_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp )
-set( EZECS_TARGET_PREFIX ${TEST_TARGET_NAME}_ )
+set( EZECS_TARGET_PREFIX ${TEST_TARGET_NAME} )
 set( EZECS_LINK_TO_LIBS ) # empty in this case
 add_subdirectory( ${EZECS_SOURCE_DIR}/source ${CMAKE_CURRENT_BINARY_DIR}/generated ) # Don't normally add "/source"
 

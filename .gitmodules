@@ -1,3 +1,6 @@
 [submodule "realtimeutils"]
 	path = realtimeutils
 	url = https://github.com/a-day-old-bagel/realtimeutils
+[submodule "slikenet"]
+	path = slikenet
+	url = https://github.com/slikesoft/slikenet

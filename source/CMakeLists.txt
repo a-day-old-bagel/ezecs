@@ -49,7 +49,8 @@ add_library( ${EZECS_TARGET_PREFIX}_ecs STATIC
   ${EZECS_OUTPUT_DIR}/ecsState.generated.cpp
   ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp
   )
-target_link_libraries( ${EZECS_TARGET_PREFIX}_ecs ${EZECS_LINK_TO_LIBS} realtimeutils )
+#target_link_libraries( ${EZECS_TARGET_PREFIX}_ecs ${EZECS_LINK_TO_LIBS} realtimeutils )
+target_link_libraries( ${EZECS_TARGET_PREFIX}_ecs ${EZECS_LINK_TO_LIBS} ezecs_extern_interface )
 target_include_directories( ${EZECS_TARGET_PREFIX}_ecs PUBLIC
   ${EZECS_OUTPUT_DIR}
   )

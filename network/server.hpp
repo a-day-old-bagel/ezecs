@@ -8,7 +8,7 @@
 #include "BitStream.h"
 #include "RakNetTypes.h"
 
-namespace ezecs {
+namespace ezecs::network {
   class Server {
       SLNet::RakPeerInterface *peer;
       DataStructures::List<SLNet::SystemAddress> addresses;

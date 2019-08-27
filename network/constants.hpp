@@ -9,7 +9,7 @@
 
 #include "MessageIdentifiers.h"
 
-namespace ezecs {
+namespace ezecs::network {
 	
 	constexpr uint32_t serverPort = 22022; // the entire range 22022-22122 is available
 	constexpr uint32_t clientPort = 0; // 0 means OS will pick a port when the client starts. 22122 is option for future.

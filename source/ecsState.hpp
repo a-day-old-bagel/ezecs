@@ -29,6 +29,7 @@
 #include "ecsComponents.generated.hpp"
 #include "delegate.hpp"
 #include "ecsKvMap.hpp"
+#include "netInterface.hpp"
 
 namespace ezecs {
 
@@ -96,6 +97,8 @@ namespace ezecs {
       // COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE
 
     public:
+  		
+  		network::NetInterface net;
 
       /**
        * Creates a new entity (specifically an Existence component).

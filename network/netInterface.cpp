@@ -5,7 +5,7 @@
 using namespace SLNet;
 using namespace rtu::topics;
 
-namespace ezecs {
+namespace ezecs::network {
 
   void NetInterface::assumeRole(Role role, const char *str) {
 	  currentRole = role;

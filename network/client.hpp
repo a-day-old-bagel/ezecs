@@ -15,7 +15,7 @@
 
 #pragma GCC diagnostic pop
 
-namespace ezecs {
+namespace ezecs::network {
   class Client {
       SLNet::RakPeerInterface *peer;
       void connect(const char *serverAddress);

@@ -7,7 +7,7 @@
 using namespace SLNet;
 using namespace rtu::topics;
 
-namespace ezecs {
+namespace ezecs::network {
 	Client::Client(const char *serverAddress) {
 		peer = RakPeerInterface::GetInstance();
 		SocketDescriptor sock(static_cast<uint16_t>(clientPort), nullptr);

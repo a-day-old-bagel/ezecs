@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace ezecs {
+namespace ezecs::network {
 	
 	class NetInterface {
 

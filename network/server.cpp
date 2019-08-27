@@ -6,7 +6,7 @@
 using namespace SLNet;
 using namespace rtu::topics;
 
-namespace ezecs {
+namespace ezecs::network {
   Server::Server() {
     peer = RakPeerInterface::GetInstance();
     peer->SetMaximumIncomingConnections(static_cast<uint16_t>(maxServerConns));

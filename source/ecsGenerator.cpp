@@ -46,12 +46,24 @@ const char *slash = "\\";
 const char *slash = "/";
 #endif
 
+struct CompAttribs {
+	bool persistent = false;
+	bool serializable = true;
+};
+
 // Prototype helper methods
 string enumStringIzer(const string& compType);
 string genStateHPrivatSection(const string &compType);
-string genStateHPublicSection(const string &compType, const string &compArgs);
-string genStateCDefns(const string &compType, const string &compArgs, const string &compArgsNameOnly);
-string getNamesFromArgList(string argList);
+string genStateHPublicSection(const string &compType, const string &compArgs, const string &compArgPtrs,
+                              const CompAttribs &attribs);
+string genStateCDefns(const string &compType, const string &compArgs, const string &compArgNames,
+											const string &compArgAddrs, const string &compArgPtrs, const string &compArgDerefs,
+											const CompAttribs &attribs);
+string getNamesFromArgList(const string &argList);
+string getPtrsFromArgList(const string &argList);
+string getNullPtrsFromArgList(const string &argList);
+string getAddrsFromNameList(const string &nameList);
+string getDerefsFromNameList(const string &nameList);
 string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& numLines);
 unsigned long occurrences(const string& s, char c);
 /*
@@ -59,20 +71,22 @@ unsigned long occurrences(const string& s, char c);
  */
 struct CompType {
   string name = "";
-  string constructorArgs, constructorArgsNamesOnly, enumName, stateH_prv, stateH_pub, stateC;
+  string ctorArgs, ctorArgNames, ctorArgPtrs, ctorArgNullPtrs, ctorArgDerefs, ctorArgAddrs;
+  string enumName, stateH_prv, stateH_pub, stateC;
   vector<string> prerequisiteComps;
   vector<string> dependentComps;
-  
-  struct Attribs {
-  	bool persistent = false;
-  } attribs;
+  CompAttribs attribs;
 
   void resolveSimpleStrings() {
     enumName = enumStringIzer(name);
     stateH_prv = genStateHPrivatSection(name);
-    stateH_pub = genStateHPublicSection(name, constructorArgs);
-    constructorArgsNamesOnly = getNamesFromArgList(constructorArgs);
-    stateC = genStateCDefns(name, constructorArgs, constructorArgsNamesOnly);
+	  ctorArgNames = getNamesFromArgList(ctorArgs);
+	  ctorArgPtrs = getPtrsFromArgList(ctorArgs);
+	  ctorArgNullPtrs = getNullPtrsFromArgList(ctorArgs);
+	  ctorArgAddrs = getAddrsFromNameList(ctorArgNames);
+	  ctorArgDerefs = getDerefsFromNameList(ctorArgNames);
+	  stateH_pub = genStateHPublicSection(name, ctorArgs, ctorArgNullPtrs, attribs);
+    stateC = genStateCDefns(name, ctorArgs, ctorArgNames, ctorArgAddrs, ctorArgPtrs, ctorArgDerefs, attribs);
   }
 };
 
@@ -266,24 +280,6 @@ int main(int argc, char *argv[]) {
     compTypeNames.push_back(match[1].str());
   }
 
-  // Fill out compTypes' constructorArgs fields using those names, and then fill all the fields we can at this point.
-  for (const auto &name : compTypeNames) {
-    stringstream regexBuilder;
-    regexBuilder << name << R"(\s*::\s*)" << name;
-    regexBuilder << R"(\s*\(\s*(.*)\s*\))";
-    regex rx_confCompCnstrctr(regexBuilder.str());
-    auto it = cregex_iterator(defns, defns + strlen(defns), rx_confCompCnstrctr);
-    if (it != cregex_iterator()) {
-      cmatch match = *it;
-      compTypes.at(name).constructorArgs = match[1].str();
-      compTypes.at(name).resolveSimpleStrings();
-    } else {
-      cerr << "Could not find constructor definition for " << name <<"! Make sure there is an explicit definition "
-           << "inside the DEFINITIONS secion of your config file." << endl;
-      return -11;
-    }
-  }
-
   // Fill compTypes' 'prerequisiteComps' fields given the user's calls to the EZECS_COMPONENT_DEPENDENCIES macro
   regex rx_confCompDep(R"(EZECS_COMPONENT_DEPENDENCIES\s*\((\s*\w*(?:\s*,\s*\w+\s*)*\s*)\))");
   for (auto it = cregex_iterator(confs, confs + strlen(confs), rx_confCompDep); it != cregex_iterator(); ++it) {
@@ -341,6 +337,9 @@ int main(int argc, char *argv[]) {
 			} else {
 				if (token == "persistent") {
 					compType->attribs.persistent = true;
+				} else if (token == "noserialize") {
+					compType->attribs.serializable = false;
+					cerr << "fowfiwejoifjowjefwe\n";
 				} else {
 					cerr << "Invalid use of EZECS_COMPONENT_ATTRIBS (first arg: '" << compType->name
 					     << "'. invalid arg given: '" << token << "'.)" << endl;
@@ -356,6 +355,24 @@ int main(int argc, char *argv[]) {
       compTypes.at(preq).dependentComps.push_back(name);
     }
   }
+
+	// Fill out compTypes' constructorArgs fields using those names, and then fill all the fields we can at this point.
+	for (const auto &name : compTypeNames) {
+		stringstream regexBuilder;
+		regexBuilder << name << R"(\s*::\s*)" << name;
+		regexBuilder << R"(\s*\(\s*(.*)\s*\))";
+		regex rx_confCompCnstrctr(regexBuilder.str());
+		auto it = cregex_iterator(defns, defns + strlen(defns), rx_confCompCnstrctr);
+		if (it != cregex_iterator()) {
+			cmatch match = *it;
+			compTypes.at(name).ctorArgs = match[1].str();
+			compTypes.at(name).resolveSimpleStrings();
+		} else {
+			cerr << "Could not find constructor definition for " << name <<"! Make sure there is an explicit definition "
+			     << "inside the DEFINITIONS secion of your config file." << endl;
+			return -11;
+		}
+	}
 
   // Build the string that goes in the component enumerators spot
   stringstream ss_code_compEnum;
@@ -439,6 +456,15 @@ int main(int argc, char *argv[]) {
     ss_code_stateHOut << endl << compTypes.at(name).stateH_pub;
   }
   string code_stateHOut = ss_code_stateHOut.str();
+  
+  // Build a string for the stuff inside the serializeComponentCreationRequest method
+  stringstream ss_code_srlAll;
+	for (const auto &name : compTypeNames) {
+		if (compTypes.at(name).attribs.serializable) {
+			ss_code_srlAll << TAB TAB "serialize" << name << "(rw, &stream, id, compStreams);" << endl;
+		}
+	}
+	string code_srlAll = ss_code_srlAll.str();
 
   // Build a string for the stuff in the 'clear all components' loop
   stringstream ss_code_clearCompLoop;
@@ -470,19 +496,19 @@ int main(int argc, char *argv[]) {
   unsigned long lineCount = 0;
 
   // replace "appears here" comments in the input file strings with code (next four sections)
-  regex rx_compIncls(R"(\/\/ EXTRA INCLUDES APPEAR HERE)");
-  regex rx_compDecls(R"(  \/\/ COMPONENT DECLARATIONS APPEAR HERE)");
-  regex rx_compEnums(R"(    \/\/ COMPONENT TYPE ENUMERATORS APPEAR HERE)");
-  regex rx_compCntAndAttrs(R"(  \/\/ COMPONENT TYPE COUNTS AND ATTRIBUTE MASKS APPEAR HERE)");
+  regex rx_compIncls(R"([ \t]*\/\/ EXTRA INCLUDES APPEAR HERE)");
+  regex rx_compDecls(R"([ \t]*\/\/ COMPONENT DECLARATIONS APPEAR HERE)");
+  regex rx_compEnums(R"([ \t]*\/\/ COMPONENT TYPE ENUMERATORS APPEAR HERE)");
+  regex rx_compCntAndAttrs(R"([ \t]*\/\/ COMPONENT TYPE COUNTS AND ATTRIBUTE MASKS APPEAR HERE)");
 	string str_compsHOut = replaceAndCount(str_compsHIn, rx_compIncls, sincls, lineCount);
 	str_compsHOut = replaceAndCount(str_compsHOut, rx_compDecls, TAB + sdecls, lineCount);
   str_compsHOut = replaceAndCount(str_compsHOut, rx_compEnums, code_compEnum, lineCount);
   str_compsHOut = replaceAndCount(str_compsHOut, rx_compCntAndAttrs, code_numComps + code_compAttrMasks, lineCount);
 
-  regex rx_compDepDef(R"(  \/\/ COMPONENT DEPENDENCY FIELD DEFINITIONS APPEAR HERE)");
-  regex rx_compMetDef(R"(  \/\/ COMPONENT METHOD DEFINITIONS APPEAR HERE)");
-  regex rx_compGetReqDef(R"(      \/\/ COMPONENT REQUIREMENTS GETTER CASES APPEAR HERE)");
-  regex rx_compGetDepDef(R"(      \/\/ COMPONENT DEPENDENTS GETTER CASES APPEAR HERE)");
+  regex rx_compDepDef(R"([ \t]*\/\/ COMPONENT DEPENDENCY FIELD DEFINITIONS APPEAR HERE)");
+  regex rx_compMetDef(R"([ \t]*\/\/ COMPONENT METHOD DEFINITIONS APPEAR HERE)");
+  regex rx_compGetReqDef(R"([ \t]*\/\/ COMPONENT REQUIREMENTS GETTER CASES APPEAR HERE)");
+  regex rx_compGetDepDef(R"([ \t]*\/\/ COMPONENT DEPENDENTS GETTER CASES APPEAR HERE)");
   string str_compsCOut = replaceAndCount(str_compsCIn, rx_compDepDef, code_compDepends, lineCount);
   str_compsCOut = replaceAndCount(str_compsCOut, rx_compMetDef, TAB + sdefns, lineCount);
   str_compsCOut = replaceAndCount(str_compsCOut, rx_compGetReqDef, code_compGetReq, lineCount);
@@ -491,10 +517,12 @@ int main(int argc, char *argv[]) {
   regex rx_compCollDecls(R"(      \/\/ COMPONENT COLLECTION AND MANIPULATION METHOD DECLARATIONS APPEAR HERE)");
   string str_stateHOut = replaceAndCount(str_stateHIn, rx_compCollDecls, code_stateHOut, lineCount);
 
-  regex rx_compClrLoop(R"(    \/\/ A LOOP TO CLEAR ALL COMPONENTS APPEARS HERE)");
-  regex rx_compRegCllbks(R"(    \/\/ CODE TO REGISTER THE APPROPRIATE CALLBACKS APPEARS HERE)");
-  regex rx_compCollDef(R"(  \/\/ COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE)");
-  string str_stateCOut = replaceAndCount(str_stateCIn, rx_compClrLoop, code_clearCompLoop, lineCount);
+	regex rx_compSrlAll(R"([ \t]*\/\/ SERIALIZE COMPONENT CREATION REQUEST DEFINITION BODY APPEARS HERE)");
+  regex rx_compClrLoop(R"([ \t]*\/\/ A LOOP TO CLEAR ALL COMPONENTS APPEARS HERE)");
+  regex rx_compRegCllbks(R"([ \t]*\/\/ CODE TO REGISTER THE APPROPRIATE CALLBACKS APPEARS HERE)");
+  regex rx_compCollDef(R"([ \t]*\/\/ COMPONENT COLLECTION MANIPULATION METHOD DEFINITIONS APPEAR HERE)");
+  string str_stateCOut = replaceAndCount(str_stateCIn, rx_compSrlAll, code_srlAll, lineCount);
+  str_stateCOut = replaceAndCount(str_stateCOut, rx_compClrLoop, code_clearCompLoop, lineCount);
   str_stateCOut = replaceAndCount(str_stateCOut, rx_compRegCllbks, code_cllbkReg, lineCount);
   str_stateCOut = replaceAndCount(str_stateCOut, rx_compCollDef, code_compCollDefns, lineCount);
 
@@ -542,7 +570,7 @@ int main(int argc, char *argv[]) {
       colDep << depn << (depn == compTypes.at(name).dependentComps.back() ? "" : ", ");
     }
     colDep << ")";
-    colCon << "CON(" << compTypes.at(name).constructorArgs << ")";
+    colCon << "CON(" << compTypes.at(name).ctorArgs << ")";
     cout << setw(32) << left << colName.str();
     cout << setw(32) << left << colReq.str();
     cout << setw(32) << left << colDep.str();
@@ -579,14 +607,21 @@ string genStateHPrivatSection(const string &compType) {
  * This converts a given component type name and constructor arguments into the public portions of the declarations of
  * that component's collection, collection manipulator methods, and callback registration methods.
  */
-string genStateHPublicSection(const string &compType, const string &compArgs) {
+string genStateHPublicSection(const string &compType, const string &compArgs, const string &compArgPtrs,
+                              const CompAttribs &attribs) {
   stringstream result;
-  result << TAB TAB TAB "CompOpReturn add" << compType << "(const entityId& id"
-         << (compArgs.length() ? ", " + compArgs : "") << ");" << endl;
-  result << TAB TAB TAB "CompOpReturn rem" << compType << "(const entityId& id);" << endl;
-  result << TAB TAB TAB "CompOpReturn get" << compType << "(const entityId& id, " << compType << "** out);" << endl;
-  result << TAB TAB TAB "void registerAddCallback" << compType << "(EntNotifyDelegate& dlgt);" << endl;
-  result << TAB TAB TAB "void registerRemCallback" << compType << "(EntNotifyDelegate& dlgt);" << endl;
+  result << TAB TAB TAB "CompOpReturn add" << compType << "(const entityId &id"
+         << (compArgs.empty() ? "" : ", " + compArgs) << ");" << endl;
+  result << TAB TAB TAB "CompOpReturn insert" << compType << "(const entityId &id, " << compType << " &&comp);" << endl;
+  result << TAB TAB TAB "CompOpReturn rem" << compType << "(const entityId &id);" << endl;
+  result << TAB TAB TAB "CompOpReturn get" << compType << "(const entityId &id, " << compType << "** out);" << endl;
+  result << TAB TAB TAB "void registerAddCallback" << compType << "(EntNotifyDelegate &dlgt);" << endl;
+  result << TAB TAB TAB "void registerRemCallback" << compType << "(EntNotifyDelegate &dlgt);" << endl;
+  if ( ! attribs.serializable) { return result.str(); }
+	result << TAB TAB TAB "void request" << compType << "(" << (compArgs.empty() ? "" : compArgs) << ");" << endl;
+	result << TAB TAB TAB "void serialize" << compType << "(bool rw, SLNet::BitStream *stream, const entityId &id"
+	       << ", std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr"
+	       << (compArgPtrs.empty() ? "" : ", " + compArgPtrs) << ");" << endl;
   return result.str();
 }
 
@@ -594,25 +629,84 @@ string genStateHPublicSection(const string &compType, const string &compArgs) {
  * This converts a given component type name and constructor arguments into the definitions of
  * that component's collection, collection manipulator methods, and callback registration methods.
  */
-string genStateCDefns(const string &compType, const string &compArgs, const string &compArgsNameOnly) {
+string genStateCDefns(const string &compType, const string &compArgs, const string &compArgNames,
+											const string &compArgAddrs, const string &compArgPtrs, const string &compArgDerefs,
+											const CompAttribs &attribs) {
   stringstream result;
-  result << TAB "CompOpReturn State::add" << compType << "(const entityId& id"
-         << (compArgs.length() ? ", " + compArgs : "") << ") {" << endl;
+  
+  result << TAB "CompOpReturn State::add" << compType << "(const entityId &id"
+         << (compArgs.empty() ? "" : ", " + compArgs) << ") {" << endl;
   result << TAB TAB "return addComp(comps_" << compType << ", id, addCallbacks_" << compType
-         << (compArgs.length() ? ", " + compArgsNameOnly : "") << ");" << endl;
+         << (compArgs.empty() ? "" : ", " + compArgNames) << ");" << endl;
   result << TAB "}" << endl;
-  result << TAB "CompOpReturn State::rem" << compType << "(const entityId& id) {" << endl;
+
+	result << TAB "CompOpReturn State::insert" << compType << "(const entityId &id, " << compType << " &&comp) {" << endl;
+	result << TAB TAB "return insertComp(comps_" << compType << ", id, addCallbacks_" << compType
+	       << ", std::forward<" << compType << ">(comp));" << endl;
+	result << TAB "}" << endl;
+  
+  result << TAB "CompOpReturn State::rem" << compType << "(const entityId &id) {" << endl;
   result << TAB TAB "return remComp(comps_" << compType << ", id, remCallbacks_" << compType << ");" << endl;
   result << TAB "}" << endl;
-  result << TAB "CompOpReturn State::get" << compType << "(const entityId& id, " << compType << "** out) {" << endl;
+  
+  result << TAB "CompOpReturn State::get" << compType << "(const entityId &id, " << compType << "** out) {" << endl;
   result << TAB TAB "return getComp(comps_" << compType << ", id, out);" << endl;
   result << TAB "}" << endl;
-  result << TAB "void State::registerAddCallback" << compType << "(EntNotifyDelegate& dlgt) {" << endl;
+  
+  result << TAB "void State::registerAddCallback" << compType << "(EntNotifyDelegate &dlgt) {" << endl;
   result << TAB TAB "addCallbacks_" << compType << ".push_back(dlgt);" << endl;
   result << TAB "}" << endl;
-  result << TAB "void State::registerRemCallback" << compType << "(EntNotifyDelegate& dlgt) {" << endl;
+  
+  result << TAB "void State::registerRemCallback" << compType << "(EntNotifyDelegate &dlgt) {" << endl;
   result << TAB TAB "remCallbacks_" << compType << ".push_back(dlgt);" << endl;
   result << TAB "}" << endl;
+  
+	if ( ! attribs.serializable) { return result.str(); }
+	
+	result << TAB "void State::request" << compType << "(" << (compArgs.empty() ? "" : compArgs) << ") {" << endl;
+	result << TAB TAB "if (net.getRole() == network::NONE) { EZECS_VERBOSE(add" << compType << "(openRequestId"
+	       << (compArgNames.empty() ? "" : ", " + compArgNames) << ")); }" << endl;
+	result << TAB TAB "else { serialize" << compType << "(true, nullptr, 0, &compStreams"
+	       << (compArgAddrs.empty() ? "" : ", " + compArgAddrs) << "); }" << endl;
+	result << TAB "}" << endl;
+
+	static int idxCnt = 0;
+	result << TAB "void State::serialize" << compType << "(bool rw, SLNet::BitStream *stream, const entityId &id"
+	       << ", std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams"
+				 << (compArgPtrs.empty() ? "" : ", " + compArgPtrs) << ") {" << endl;
+	result << TAB TAB "BitStream *inStream = compStreams ? (*compStreams)[" << idxCnt++ << "].get() : nullptr;" << endl;
+	result << TAB TAB << compType << " *comp;" << endl;
+	result << TAB TAB "if (inStream) { // If component constructor  data is present" << endl;
+	result << TAB TAB TAB "if (rw) { // Write mode = writing component constructor arguments to inStream" << endl;
+	
+	if (compArgs.empty()) {
+		result << TAB TAB TAB TAB << "inStream->WriteCompressed((bool) false); // takes no constructor arguments" << endl;
+	} else {
+		result << TAB TAB TAB TAB << compType << "::serialize(true, *inStream"
+		       << (compArgNames.empty() ? "" : ", " + compArgNames) << ");" << endl;
+	}
+	
+	result << TAB TAB TAB "} else if (inStream->GetNumberOfBitsUsed()) { // copy from inStream to stream" << endl;
+	result << TAB TAB TAB TAB "stream->WriteCompressed((bool) true);" << endl;
+	result << TAB TAB TAB TAB "stream->Write(*inStream);" << endl;
+	result << TAB TAB TAB "} else { // instream has no entry for a given component's constructor arguments." << endl;
+	result << TAB TAB TAB TAB "stream->WriteCompressed((bool) false);" << endl;
+	result << TAB TAB TAB "}" << endl;
+	result << TAB TAB "} else if (hasComponent(rw, *stream, id, PLACEMENT)) {" << endl;
+	result << TAB TAB TAB "if (rw) {" << endl;
+	
+	result << TAB TAB TAB TAB "EZECS_VERBOSE(get" << compType << "(id, &comp));" << endl;
+	result << TAB TAB TAB TAB "comp->serialize(true, *stream);" << endl;
+	
+	result << TAB TAB TAB "} else {" << endl;
+	
+	result << TAB TAB TAB TAB "EZECS_VERBOSE(insert" << compType << "(id, std::move(*" << compType
+				 << "::serialize(false, *stream))));" << endl;
+	
+	result << TAB TAB TAB "}" << endl;
+	result << TAB TAB "} " << endl;
+	result << TAB "}" << endl;
+	
   return result.str();
 }
 
@@ -621,9 +715,11 @@ string genStateCDefns(const string &compType, const string &compArgs, const stri
  * this extracts just the names and puts them in a non-typed list (EX. "name0, name1, name2, ...").
  * TODO: this can't handle const at all right now. Sorry. FIXME.
  */
-string getNamesFromArgList(string argList) {
-  replace(argList.begin(), argList.end(), ',' , ' ');
-  stringstream input(argList), output;
+string getNamesFromArgList(const string &argList) {
+	string argListCopy(argList);
+  replace(argListCopy.begin(), argListCopy.end(), ',' , ' ');
+  replace(argListCopy.begin(), argListCopy.end(), '*' , ' ');
+  stringstream input(argListCopy), output;
   string singleTerm;
   bool oddPicker = false, first = true;
   while (input >> singleTerm) {
@@ -635,6 +731,72 @@ string getNamesFromArgList(string argList) {
     oddPicker = !oddPicker;
   }
   return output.str();
+}
+
+string getPtrsFromArgList(const string &argList) {
+	string argListCopy(argList);
+	replace(argListCopy.begin(), argListCopy.end(), ',' , ' ');
+	stringstream input(argListCopy), output;
+	string singleTerm;
+	bool oddPicker = false, first = true;
+	while (input >> singleTerm) {
+		if (oddPicker) {
+			output << " *" << singleTerm;
+		} else {
+			if (first) { first = false; }
+			else { output << ", "; }
+			output << singleTerm;
+		}
+		oddPicker = !oddPicker;
+	}
+	return output.str();
+}
+
+string getNullPtrsFromArgList(const string &argList) {
+	string argListCopy(argList);
+	replace(argListCopy.begin(), argListCopy.end(), ',' , ' ');
+	stringstream input(argListCopy), output;
+	string singleTerm;
+	bool oddPicker = false, first = true;
+	while (input >> singleTerm) {
+		if (oddPicker) {
+			output << " *" << singleTerm << " = nullptr";
+		} else {
+			if (first) { first = false; }
+			else { output << ", "; }
+			output << singleTerm;
+		}
+		oddPicker = !oddPicker;
+	}
+	return output.str();
+}
+
+string getAddrsFromNameList(const string &nameList) {
+	string argNamesCopy(nameList);
+	replace(argNamesCopy.begin(), argNamesCopy.end(), ',' , ' ');
+	stringstream input(argNamesCopy), output;
+	string singleTerm;
+	bool first = true;
+	while (input >> singleTerm) {
+		if (first) { first = false; }
+		else { output << ", "; }
+		output << "&" << singleTerm;
+	}
+	return output.str();
+}
+
+string getDerefsFromNameList(const string &nameList) {
+	string argNamesCopy(nameList);
+	replace(argNamesCopy.begin(), argNamesCopy.end(), ',' , ' ');
+	stringstream input(argNamesCopy), output;
+	string singleTerm;
+	bool first = true;
+	while (input >> singleTerm) {
+		if (first) { first = false; }
+		else { output << ", "; }
+		output << "*" << singleTerm;
+	}
+	return output.str();
 }
 
 /*

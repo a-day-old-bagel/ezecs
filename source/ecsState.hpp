@@ -98,7 +98,29 @@ namespace ezecs {
 
     public:
   		
+  		/**
+  		 * Networking aspects of State are currently being fleshed-out, so for the time being there will be networking-
+  		 * related fields and methods here. These may be moved to a more appropriate place later, but it has become clear
+  		 * that networking capability does in fact benefit from being integrated here at the lowest level the ECS.
+  		 */
   		network::NetInterface net;
+		  std::vector<std::unique_ptr<SLNet::BitStream>> compStreams;
+		  SLNet::BitStream stream;
+		  entityId openRequestId = 0;
+		  bool entityRequestOpen = false;
+
+		  void openEntityRequest();
+		  entityId closeEntityRequest();
+		  void broadcastManualEntity(const entityId &id);
+		  void requestEntityDeletion(const entityId &id);
+
+		  static void writeEntityRequestHeader(SLNet::BitStream &stream);
+		  entityId serializeEntityCreationRequest(bool rw, SLNet::BitStream &stream, entityId id = 0,
+					  std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
+		  void serializeComponentCreationRequest(bool rw, SLNet::BitStream &stream, entityId id = 0,
+					  std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
+		  entityId serializeEntityDeletionRequest(bool rw, SLNet::BitStream &stream, entityId id = 0);
+		  bool hasComponent(bool rw, SLNet::BitStream &stream, const entityId &id, const compMask &type);
 
       /**
        * Creates a new entity (specifically an Existence component).
@@ -159,9 +181,7 @@ namespace ezecs {
       /*
        * The rest of this stuff is used by the public component collection manipulation methods
        */
-      template<typename compType, typename ... types>
-      inline CompOpReturn addCompNoChecks(KvMap<entityId, compType>& coll, Existence* existence,
-                          const entityId& id, const EntNotifyDelegates& callbacks, const types& ... args);
+      
       template<typename compType>
       inline CompOpReturn remCompNoChecks(KvMap<entityId, compType>& coll, Existence* existence,
                           const entityId& id, const EntNotifyDelegates& callbacks);
@@ -169,9 +189,15 @@ namespace ezecs {
       template<typename compType, typename ... types>
       inline CompOpReturn addComp(KvMap<entityId, compType>& coll, const entityId& id,
                            const EntNotifyDelegates& callbacks, const types& ... args);
+
+		  template<typename compType>
+		  inline CompOpReturn insertComp(KvMap<entityId, compType>& coll, const entityId& id,
+		                                 const EntNotifyDelegates& callbacks, compType && input);
+		  
       template<typename compType>
       inline CompOpReturn remComp(KvMap<entityId, compType>& coll, const entityId& id,
                                   const EntNotifyDelegates& callbacks);
+      
       template<typename compType>
       inline CompOpReturn getComp(KvMap<entityId, compType>& coll, const entityId& id, compType** out);
 

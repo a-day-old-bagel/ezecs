@@ -45,8 +45,18 @@ namespace ezecs {
       V& operator [] (K&& key);
       void clear() noexcept;
       bool contains(const K &key) const;
+      
       template<class... Args>
       bool emplace(Args &&... args);
+      
+		  template <class... Args>
+		  bool try_emplace(K&& k, Args&&... args);
+		  template <class... Args>
+		  bool try_emplace(const K& k, Args&&... args);
+
+		  bool insert(K&& k, V&& v);
+		  bool insert(const K& k, V&& v);
+		  
       bool erase(const K &key);
       void reserve(std::size_t n);
       size_t count(const K &key) const;
@@ -84,6 +94,24 @@ namespace ezecs {
   bool KvMap<K, V>::emplace(Args &&... args) {
     return internalMap.emplace(std::forward<Args>(args)...).second;
   }
+  template<class K, class V>
+  template <class... Args>
+  bool KvMap<K, V>::try_emplace(K&& k, Args&&... args) {
+  	return internalMap.try_emplace(std::forward<K>(k), std::forward<Args>(args)...).second;
+  }
+	template<class K, class V>
+	template <class... Args>
+	bool KvMap<K, V>::try_emplace(const K& k, Args&&... args) {
+		return internalMap.try_emplace(k, std::forward<Args>(args)...).second;
+	}
+	template<class K, class V>
+	bool KvMap<K, V>::insert(K&& k, V&& v) {
+		return internalMap.insert(std::make_pair(std::forward<K>(k), std::forward<V>(v))).second;
+	}
+	template<class K, class V>
+	bool KvMap<K, V>::insert(const K& k, V&& v) {
+		return internalMap.insert(std::make_pair(k, std::forward<V>(v))).second;
+	}
   template<class K, class V>
   bool KvMap<K, V>::erase(const K &key) {
     return (bool) internalMap.erase(key);

@@ -339,7 +339,6 @@ int main(int argc, char *argv[]) {
 					compType->attribs.persistent = true;
 				} else if (token == "noserialize") {
 					compType->attribs.serializable = false;
-					cerr << "fowfiwejoifjowjefwe\n";
 				} else {
 					cerr << "Invalid use of EZECS_COMPONENT_ATTRIBS (first arg: '" << compType->name
 					     << "'. invalid arg given: '" << token << "'.)" << endl;

@@ -54,6 +54,7 @@ namespace ezecs {
 		  template <class... Args>
 		  bool try_emplace(const K& k, Args&&... args);
 
+		  bool insert(std::pair<K, V>&& pair);
 		  bool insert(K&& k, V&& v);
 		  bool insert(const K& k, V&& v);
 		  
@@ -61,8 +62,8 @@ namespace ezecs {
       void reserve(std::size_t n);
       size_t count(const K &key) const;
       typedef typename std::unordered_map<K, V>::const_iterator const_iterator;
-      const_iterator begin() const;// { return internalMap.begin(); }
-      const_iterator end() const;// { return internalMap.end(); }
+      const_iterator begin() const;
+      const_iterator end() const;
   };
 
   template<class K, class V>
@@ -103,6 +104,10 @@ namespace ezecs {
 	template <class... Args>
 	bool KvMap<K, V>::try_emplace(const K& k, Args&&... args) {
 		return internalMap.try_emplace(k, std::forward<Args>(args)...).second;
+	}
+	template<class K, class V>
+	bool KvMap<K, V>::insert(std::pair<K, V> && pair) {
+		return internalMap.insert(std::forward<std::pair<K, V>>(pair)).second;
 	}
 	template<class K, class V>
 	bool KvMap<K, V>::insert(K&& k, V&& v) {

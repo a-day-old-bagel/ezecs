@@ -614,6 +614,7 @@ string genStateHPublicSection(const string &compType, const string &compArgs, co
   result << TAB TAB TAB "CompOpReturn insert" << compType << "(const entityId &id, " << compType << " &&comp);" << endl;
   result << TAB TAB TAB "CompOpReturn rem" << compType << "(const entityId &id);" << endl;
   result << TAB TAB TAB "CompOpReturn get" << compType << "(const entityId &id, " << compType << "** out);" << endl;
+  result << TAB TAB TAB << compType << "& get" << compType << "(const entityId &id);" << endl;
   result << TAB TAB TAB "void registerAddCallback" << compType << "(EntNotifyDelegate &dlgt);" << endl;
   result << TAB TAB TAB "void registerRemCallback" << compType << "(EntNotifyDelegate &dlgt);" << endl;
   if ( ! attribs.serializable) { return result.str(); }
@@ -651,6 +652,12 @@ string genStateCDefns(const string &compType, const string &compArgs, const stri
   result << TAB "CompOpReturn State::get" << compType << "(const entityId &id, " << compType << "** out) {" << endl;
   result << TAB TAB "return getComp(comps_" << compType << ", id, out);" << endl;
   result << TAB "}" << endl;
+
+	result << TAB << compType << "& State::get" << compType << "(const entityId &id) {" << endl;
+	result << TAB TAB << compType << " *comp;" << endl;
+	result << TAB TAB "EZECS_VERBOSE_FATAL(get" << compType << "(id, &comp))" << endl;
+	result << TAB TAB "return *comp;" << endl;
+	result << TAB "}" << endl;
   
   result << TAB "void State::registerAddCallback" << compType << "(EntNotifyDelegate &dlgt) {" << endl;
   result << TAB TAB "addCallbacks_" << compType << ".push_back(dlgt);" << endl;

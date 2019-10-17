@@ -41,6 +41,21 @@ namespace ezecs {
                         entNotifyHandler&& forgetHandler   = RTU_FUNC_DLGT(passThrough))
                         : discoverHandler(discoverHandler), forgetHandler(forgetHandler) { }
   };
+	static void discover(const entityId& id, void* data) {
+		auto registry = reinterpret_cast<IdRegistry*>(data);
+		if (registry->discoverHandler(id)) {
+			registry->ids.push_back(id);
+		}
+	}
+	static void forget(const entityId& id, void* data) {
+		auto registry = reinterpret_cast<IdRegistry*>(data);
+		auto position = std::find(registry->ids.begin(), registry->ids.end(), id);
+		if (position != registry->ids.end()) {
+			if (registry->forgetHandler(id)) {
+				registry->ids.erase(position);
+			}
+		}
+	}
 
   template<typename Derived_System>
   class System
@@ -55,9 +70,8 @@ namespace ezecs {
       std::vector<IdRegistry> registries;
 
     public:
-      explicit System(State* state);
+      explicit System(State* state, std::vector<ezecs::compMask> &&requiredComps);
       virtual ~System();
-      bool init();
       void tick(double dt);
       void pause();
       void resume();
@@ -66,42 +80,23 @@ namespace ezecs {
   };
 
   template<typename Derived_System>
-  System<Derived_System>::System(State* state)
-      : state(state) { }
+  System<Derived_System>::System(State* state, std::vector<ezecs::compMask> &&requiredComps) : state(state) {
+	  registries.resize(requiredComps.size());
+	  for (size_t i = 0; i < requiredComps.size(); ++i) {
+		  state->listenForLikeEntities(
+					  requiredComps[i],
+					  EntNotifyDelegate{ RTU_FUNC_DLGT(discover), requiredComps[i], &registries[i] },
+					  EntNotifyDelegate{ RTU_FUNC_DLGT(forget), requiredComps[i], &registries[i] }
+		  );
+	  }
+  }
   template<typename Derived_System>
   System<Derived_System>::~System() {
-    //TODO: Remove callbacks from State
+    // TODO: Remove callbacks from State
   }
   template<typename Derived_System>
   Derived_System& System<Derived_System>::sys() {
     return *static_cast<Derived_System*>(this);
-  }
-  static void discover(const entityId& id, void* data) {
-    IdRegistry* registry = reinterpret_cast<IdRegistry*>(data);
-    if (registry->discoverHandler(id)) {
-      registry->ids.push_back(id);
-    }
-  }
-  static void forget(const entityId& id, void* data) {
-    auto registry = reinterpret_cast<IdRegistry*>(data);
-    auto position = std::find(registry->ids.begin(), registry->ids.end(), id);
-    if (position != registry->ids.end()) {
-      if (registry->forgetHandler(id)) {
-        registry->ids.erase(position);
-      }
-    }
-  }
-  template<typename Derived_System>
-  bool System<Derived_System>::init() {
-    registries.resize(sys().requiredComponents.size());
-    for (size_t i = 0; i < sys().requiredComponents.size(); ++i) {
-      state->listenForLikeEntities(
-           sys().requiredComponents[i],
-           EntNotifyDelegate{ RTU_FUNC_DLGT(discover), sys().requiredComponents[i], &registries[i] },
-           EntNotifyDelegate{ RTU_FUNC_DLGT(forget), sys().requiredComponents[i], &registries[i] }
-      );
-    }
-    return sys().onInit();
   }
   template<typename Derived_System>
   void System<Derived_System>::tick(double dt) {

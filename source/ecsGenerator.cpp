@@ -58,7 +58,7 @@ string genStateHPublicSection(const string &compType, const string &compArgs, co
                               const CompAttribs &attribs);
 string genStateCDefns(const string &compType, const string &compArgs, const string &compArgNames,
 											const string &compArgAddrs, const string &compArgPtrs, const string &compArgDerefs,
-											const CompAttribs &attribs);
+											const string &compEnum, const CompAttribs &attribs);
 string getNamesFromArgList(const string &argList);
 string getPtrsFromArgList(const string &argList);
 string getNullPtrsFromArgList(const string &argList);
@@ -86,7 +86,7 @@ struct CompType {
 	  ctorArgAddrs = getAddrsFromNameList(ctorArgNames);
 	  ctorArgDerefs = getDerefsFromNameList(ctorArgNames);
 	  stateH_pub = genStateHPublicSection(name, ctorArgs, ctorArgNullPtrs, attribs);
-    stateC = genStateCDefns(name, ctorArgs, ctorArgNames, ctorArgAddrs, ctorArgPtrs, ctorArgDerefs, attribs);
+    stateC = genStateCDefns(name, ctorArgs, ctorArgNames, ctorArgAddrs, ctorArgPtrs, ctorArgDerefs, enumName, attribs);
   }
 };
 
@@ -557,8 +557,10 @@ int main(int argc, char *argv[]) {
 
   // Give some feedback
   for (const auto &name : compTypeNames) {
-    stringstream colName, colReq, colDep, colCon;
+    stringstream colName, colAttr, colReq, colDep, colCtor;
     colName << left << name << " [" << compTypes.at(name).enumName << "]";
+	  colAttr << (compTypes.at(name).attribs.serializable ? "s" : "");
+    colAttr << (compTypes.at(name).attribs.persistent ? "p" : "");
     colReq << "REQ(";
     for (const auto &preq : compTypes.at(name).prerequisiteComps) {
       colReq << preq << (preq == compTypes.at(name).prerequisiteComps.back() ? "" : ", ");
@@ -569,11 +571,13 @@ int main(int argc, char *argv[]) {
       colDep << depn << (depn == compTypes.at(name).dependentComps.back() ? "" : ", ");
     }
     colDep << ")";
-    colCon << "CON(" << compTypes.at(name).ctorArgs << ")";
-    cout << setw(32) << left << colName.str();
-    cout << setw(32) << left << colReq.str();
-    cout << setw(32) << left << colDep.str();
-    cout << setw(32) << left << colCon.str() << endl;
+    colCtor << "CTOR(" << compTypes.at(name).ctorArgs << ")";
+    cout << setw(40) << left << colName.str();
+    cout << setw(5) << left << colAttr.str();
+    cout << setw(40) << left << colReq.str();
+    // cout << setw(40) << left << colDep.str();
+    // cout << setw(40) << left << colCtor.str();
+    cout << endl;
   }
   // report lines generated
   cout << "LINES OF CODE GENERATED: " << lineCount << endl;
@@ -631,7 +635,7 @@ string genStateHPublicSection(const string &compType, const string &compArgs, co
  */
 string genStateCDefns(const string &compType, const string &compArgs, const string &compArgNames,
 											const string &compArgAddrs, const string &compArgPtrs, const string &compArgDerefs,
-											const CompAttribs &attribs) {
+											const string &compEnum, const CompAttribs &attribs) {
   stringstream result;
   
   result << TAB "CompOpReturn State::add" << compType << "(const entityId &id"
@@ -677,40 +681,50 @@ string genStateCDefns(const string &compType, const string &compArgs, const stri
 	result << TAB "}" << endl;
 
 	static int idxCnt = 0;
-	result << TAB "void State::serialize" << compType << "(bool rw, SLNet::BitStream *stream, const entityId &id"
-	       << ", std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams"
+	result << TAB "void State::serialize" << compType << "(bool rw, SLNet::BitStream *finalStream, const entityId &id"
+	       << ", std::vector<std::unique_ptr<SLNet::BitStream>> *ctorStreams"
 				 << (compArgPtrs.empty() ? "" : ", " + compArgPtrs) << ") {" << endl;
-	result << TAB TAB "BitStream *inStream = compStreams ? (*compStreams)[" << idxCnt++ << "].get() : nullptr;" << endl;
-	result << TAB TAB << compType << " *comp;" << endl;
-	result << TAB TAB "if (inStream) { // If component constructor  data is present" << endl;
-	result << TAB TAB TAB "if (rw) { // Write mode = writing component constructor arguments to inStream" << endl;
+	result << TAB TAB "BitStream *ctorStream = ctorStreams ? (*ctorStreams)[" << idxCnt++ << "].get() : nullptr;"
+				 << endl;
+	if (!compArgs.empty()) {
+		result << TAB TAB << compType << " *comp;" << endl;
+	}
+	result << TAB TAB "if (ctorStream) { // If component constructor  data is present" << endl;
+	result << TAB TAB TAB "if (rw) { // Write mode = writing component constructor arguments to ctorStream" << endl;
 	
 	if (compArgs.empty()) {
-		result << TAB TAB TAB TAB << "inStream->WriteCompressed((bool) false); // takes no constructor arguments" << endl;
+		result << TAB TAB TAB TAB << "ctorStream->WriteCompressed((bool) false); // takes no constructor arguments"
+					 << endl;
 	} else {
-		result << TAB TAB TAB TAB << compType << "::serialize(true, *inStream"
-		       << (compArgNames.empty() ? "" : ", " + compArgNames) << ");" << endl;
+		result << TAB TAB TAB TAB << compType << "::serializeCtor(*ctorStream"
+		       << (compArgDerefs.empty() ? "" : ", " + compArgDerefs) << ");" << endl;
 	}
 	
-	result << TAB TAB TAB "} else if (inStream->GetNumberOfBitsUsed()) { // copy from inStream to stream" << endl;
-	result << TAB TAB TAB TAB "stream->WriteCompressed((bool) true);" << endl;
-	result << TAB TAB TAB TAB "stream->Write(*inStream);" << endl;
-	result << TAB TAB TAB "} else { // instream has no entry for a given component's constructor arguments." << endl;
-	result << TAB TAB TAB TAB "stream->WriteCompressed((bool) false);" << endl;
+	result << TAB TAB TAB "} else if (ctorStream->GetNumberOfBitsUsed()) { // copy from ctorStream to"
+				 <<"finalStream" << endl;
+	result << TAB TAB TAB TAB "finalStream->WriteCompressed((bool) true);" << endl;
+	result << TAB TAB TAB TAB "finalStream->Write(*ctorStream);" << endl;
+	result << TAB TAB TAB "} else { // ctorStream has no entry for a given component's constructor arguments."
+				 << endl;
+	result << TAB TAB TAB TAB "finalStream->WriteCompressed((bool) false);" << endl;
 	result << TAB TAB TAB "}" << endl;
-	result << TAB TAB "} else if (hasComponent(rw, *stream, id, PLACEMENT)) {" << endl;
-	result << TAB TAB TAB "if (rw) {" << endl;
+
+	if (compArgs.empty()) {
+		result << TAB TAB "} else if ( !rw && hasComponent(rw, *finalStream, id, " << compEnum << ")) {" << endl;
+		result << TAB TAB TAB "EZECS_VERBOSE(insert" << compType << "(id, std::move(" << compType << "())));" << endl;
+		result << TAB TAB "} " << endl;
+	} else {
+		result << TAB TAB "} else if (hasComponent(rw, *finalStream, id, " << compEnum << ")) {" << endl;
+		result << TAB TAB TAB "if (rw) {" << endl;
+		result << TAB TAB TAB TAB "EZECS_VERBOSE(get" << compType << "(id, &comp));" << endl;
+		result << TAB TAB TAB TAB "comp->serialize(*finalStream);" << endl;
+		result << TAB TAB TAB "} else {" << endl;
+		result << TAB TAB TAB TAB "EZECS_VERBOSE(insert" << compType << "(id, std::move(" << compType
+		       << "::deserialize(*finalStream))));" << endl;
+		result << TAB TAB TAB "}" << endl;
+		result << TAB TAB "} " << endl;
+	}
 	
-	result << TAB TAB TAB TAB "EZECS_VERBOSE(get" << compType << "(id, &comp));" << endl;
-	result << TAB TAB TAB TAB "comp->serialize(true, *stream);" << endl;
-	
-	result << TAB TAB TAB "} else {" << endl;
-	
-	result << TAB TAB TAB TAB "EZECS_VERBOSE(insert" << compType << "(id, std::move(*" << compType
-				 << "::serialize(false, *stream))));" << endl;
-	
-	result << TAB TAB TAB "}" << endl;
-	result << TAB TAB "} " << endl;
 	result << TAB "}" << endl;
 	
   return result.str();

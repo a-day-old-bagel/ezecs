@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
   string srcDir = argv[1];
   string binDir = argv[2];
   vector<string> fileNames_configsIn(argc - 3);
-  for (uint_fast32_t i = 3; i < argc; ++i) { fileNames_configsIn[i - 3] = argv[i]; }  
+  for (uint_fast32_t i = 3; i < (uint_fast32_t)argc; ++i) { fileNames_configsIn[i - 3] = argv[i]; }  
   string fileName_compsHIn = srcDir + slash + "ecsComponents.hpp";
   string fileName_compsCIn = srcDir + slash + "ecsComponents.cpp";
   string fileName_compsHOut = binDir + slash + "ecsComponents.generated.hpp";
@@ -847,7 +847,7 @@ string getDerefsFromNameList(const string &nameList) {
  * A helper to keep track of how many lines of code have been inserted using regex_replace
  */
 string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, uint_fast32_t & numLines) {
-	numLines += count(reStr.begin(), reStr.end(), '\n');
+	numLines += (uint_fast32_t) count(reStr.begin(), reStr.end(), '\n');
   return regex_replace(inStr, rx, reStr);
 }
 

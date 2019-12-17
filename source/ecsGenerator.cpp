@@ -28,6 +28,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+/*
+ * TODO: Dependency cycle detection
+ * Currently, component dependency cycles will result in infinite loops in this code
+ */
 
 #include <sstream>
 #include <fstream>
@@ -64,8 +68,7 @@ string getPtrsFromArgList(const string &argList);
 string getNullPtrsFromArgList(const string &argList);
 string getAddrsFromNameList(const string &nameList);
 string getDerefsFromNameList(const string &nameList);
-string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& numLines);
-unsigned long occurrences(const string& s, char c);
+string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, uint_fast32_t & numLines);
 /*
  * CompType holds everything we need to know about a component type in order to generate all the associated code.
  */
@@ -75,6 +78,7 @@ struct CompType {
   string enumName, stateH_prv, stateH_pub, stateC;
   vector<string> prerequisiteComps;
   vector<string> dependentComps;
+  bool safeAsPreq = false;
   CompAttribs attribs;
 
   void resolveSimpleStrings() {
@@ -457,12 +461,32 @@ int main(int argc, char *argv[]) {
   string code_stateHOut = ss_code_stateHOut.str();
   
   // Build a string for the stuff inside the serializeComponentCreationRequest method
+  // (De)Serialization order must ensure no dependent comps are processed before their prerequisites
   stringstream ss_code_srlAll;
-	for (const auto &name : compTypeNames) {
-		if (compTypes.at(name).attribs.serializable) {
-			ss_code_srlAll << TAB TAB "serialize" << name << "(rw, &stream, id, compStreams);" << endl;
-		}
-	}
+	bool compsRemain = true;
+  while (compsRemain) {
+	  compsRemain = false;
+	  for (const auto &name : compTypeNames) {
+		  if (compTypes.at(name).attribs.serializable && ! compTypes.at(name).safeAsPreq) {
+		    bool preqsSatisfied = true;
+		    for (const auto &preq : compTypes.at(name).prerequisiteComps) {
+		      if ( ! compTypes.at(preq).safeAsPreq) {
+		        preqsSatisfied = false;
+		        if ( ! compTypes.at(preq).attribs.serializable) {
+		        	cerr << preq << ": Serializable component cannot depend on non-serializable component!" << endl;
+		        	return -20;
+		        }
+		      }
+		    }
+		    if (preqsSatisfied) {
+			    ss_code_srlAll << TAB TAB "serialize" << name << "(rw, &stream, id, compStreams);" << endl;
+			    compTypes.at(name).safeAsPreq = true;
+		    } else {
+		    	compsRemain = true;
+		    }
+		  }
+	  }
+  }
 	string code_srlAll = ss_code_srlAll.str();
 
   // Build a string for the stuff in the 'clear all components' loop
@@ -492,7 +516,7 @@ int main(int argc, char *argv[]) {
   string code_compCollDefns = ss_code_compCollDefns.str();
 
   // keep count of lines generated
-  unsigned long lineCount = 0;
+  uint_fast32_t lineCount = 0;
 
   // replace "appears here" comments in the input file strings with code (next four sections)
   regex rx_compIncls(R"([ \t]*\/\/ EXTRA INCLUDES APPEAR HERE)");
@@ -710,16 +734,16 @@ string genStateCDefns(const string &compType, const string &compArgs, const stri
 	result << TAB TAB TAB "}" << endl;
 
 	if (compArgs.empty()) {
-		result << TAB TAB "} else if ( !rw && hasComponent(rw, *finalStream, id, " << compEnum << ")) {" << endl;
-		result << TAB TAB TAB "EZECS_VERBOSE(insert" << compType << "(id, std::move(" << compType << "())));" << endl;
+		result << TAB TAB "} else if (hasComponent(rw, *finalStream, id, " << compEnum << ") && !rw) {" << endl;
+		result << TAB TAB TAB "EZECS_VERBOSE_FATAL(insert" << compType << "(id, std::move(" << compType << "())));" << endl;
 		result << TAB TAB "} " << endl;
 	} else {
 		result << TAB TAB "} else if (hasComponent(rw, *finalStream, id, " << compEnum << ")) {" << endl;
 		result << TAB TAB TAB "if (rw) {" << endl;
-		result << TAB TAB TAB TAB "EZECS_VERBOSE(get" << compType << "(id, &comp));" << endl;
+		result << TAB TAB TAB TAB "EZECS_VERBOSE_FATAL(get" << compType << "(id, &comp));" << endl;
 		result << TAB TAB TAB TAB "comp->serialize(*finalStream);" << endl;
 		result << TAB TAB TAB "} else {" << endl;
-		result << TAB TAB TAB TAB "EZECS_VERBOSE(insert" << compType << "(id, std::move(" << compType
+		result << TAB TAB TAB TAB "EZECS_VERBOSE_FATAL(insert" << compType << "(id, std::move(" << compType
 		       << "::deserialize(*finalStream))));" << endl;
 		result << TAB TAB TAB "}" << endl;
 		result << TAB TAB "} " << endl;
@@ -822,7 +846,7 @@ string getDerefsFromNameList(const string &nameList) {
 /*
  * A helper to keep track of how many lines of code have been inserted using regex_replace
  */
-string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, unsigned long& numLines) {
+string replaceAndCount(const string& inStr, const regex& rx, const string& reStr, uint_fast32_t & numLines) {
 	numLines += count(reStr.begin(), reStr.end(), '\n');
   return regex_replace(inStr, rx, reStr);
 }

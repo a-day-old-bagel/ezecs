@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include "ecsTypes.hpp"
 #include "ecsComponents.generated.hpp"
 #include "ecsHelpers.hpp"
 #include "ecsKvMap.hpp"

@@ -17,6 +17,7 @@ message( STATUS "Ezecs is using ${EZECS_CONFIG_FILE}" )
 message( STATUS "to pull stuff from ${EZECS_INPUT_DIR}" )
 message( STATUS "and write stuff to ${EZECS_OUTPUT_DIR}" )
 
+configure_file( ${EZECS_INPUT_DIR}/ecsTypes.hpp ${EZECS_OUTPUT_DIR}/ecsTypes.hpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ecsHelpers.hpp ${EZECS_OUTPUT_DIR}/ecsHelpers.hpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ecsHelpers.cpp ${EZECS_OUTPUT_DIR}/ecsHelpers.cpp COPYONLY )
 configure_file( ${EZECS_INPUT_DIR}/ecsKvMap.hpp ${EZECS_OUTPUT_DIR}/ecsKvMap.hpp COPYONLY )

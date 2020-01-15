@@ -2,14 +2,16 @@
 
 #include <cstdint>
 
+namespace ezecs {
+
 /*
  * "compMask" is a bit mask (or set of flags) that is used to 
  * represent a set of component types. Each bit corresponds to 
  * a single component type. "entityId" is the type used for 
  * entity IDs (surprise!).
  */
-typedef uint32_t compMask;
-typedef uint32_t entityId;
+	typedef uint32_t compMask;
+	typedef uint32_t entityId;
 
 /*
  * Component base class
@@ -19,9 +21,10 @@ typedef uint32_t entityId;
  * must inherit from Component (this will be up to the user, who provides 
  * the configuration file).
  */
-template <typename Derived>
-struct Component {
-	static compMask requiredComps;
-	static compMask dependentComps;
-	static compMask flag;
-};
+	template<typename Derived>
+	struct Component {
+		static compMask requiredComps;
+		static compMask dependentComps;
+		static compMask flag;
+	};
+}

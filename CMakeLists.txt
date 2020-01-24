@@ -22,6 +22,10 @@ if ( NOT TARGET ezecs_extern_interface )
   # REALTIMEUTILS
   add_subdirectory( realtimeutils )
   extern( link realtimeutils )
+  # DISCORD
+  option( DISCORD_BUILD_EXAMPLES "Build Examples"	OFF )
+  add_subdirectory( discordcppsdk )
+  extern( link discord )
   # CREATE ezecs_extern_interface
   extern( finish )
   if ( hasParent )

@@ -4,6 +4,7 @@ add_library( ezecs_network STATIC
   netInterface.hpp netInterface.cpp
   server.hpp server.cpp
   constants.hpp
+  discord.hpp discord.cpp 
   )
 target_link_libraries( ezecs_network
   ezecs_extern_interface

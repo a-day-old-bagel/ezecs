@@ -4,3 +4,6 @@
 [submodule "slikenet"]
 	path = slikenet
 	url = https://github.com/slikesoft/slikenet
+[submodule "discordcppsdk"]
+	path = discordcppsdk
+	url = https://github.com/a-day-old-bagel/discordcppsdk

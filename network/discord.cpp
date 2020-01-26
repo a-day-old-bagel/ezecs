@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include "discord.hpp"
 #include "topics.hpp"
 
@@ -75,10 +76,6 @@ namespace ezecs::network {
 		state.core->LobbyManager().CreateLobby(lobby, [&](discord::Result result, discord::Lobby const &lby) {
 			if (result == discord::Result::Ok) {
 				publishf("log", "Created lobby, secret is \"%s\"", lby.GetSecret());
-				std::array<uint8_t, 234> data{};
-				state.core->LobbyManager().SendLobbyMessage(lby.GetId(), data.data(), data.size(), [](discord::Result result) {
-					publishf("log", "Sent lobby message. Result was %i.", result);
-				});
 			} else {
 				publishf("err", "Failed to create lobby with error %i.", result);
 			}

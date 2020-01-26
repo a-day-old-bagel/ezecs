@@ -8,7 +8,8 @@ using namespace discord;
 namespace ezecs::network {
 	
 	static constexpr auto appId = 667545903715975168;
-	static std::string toString(discord::Status statusNum){ 
+	
+	static std::string toString(discord::Status statusNum) { 
 		switch(statusNum) {
 			case discord::Status::Online: return "ACTIVE";
 			case discord::Status::Idle: return "IDLE";
@@ -17,16 +18,28 @@ namespace ezecs::network {
 			default: return "UNKNOWN";
 		}
 	}
-
-	std::map<std::string, std::vector<std::string>> DiscordContext::Friend::statusList;
+	static std::string toString(discord::LogLevel levelNum) {
+		switch(levelNum) {
+			case discord::LogLevel::Info: return "INFO";
+			case discord::LogLevel::Debug: return "DEBUG";
+			case discord::LogLevel::Warn: return "WARNING";
+			case discord::LogLevel::Error: return "ERROR";
+			default: return "UNKNOWN";
+		}
+	}
 	
-	void tester() {
-		RTU_STATIC_SSUB(testerSub, "friend_info", tester);
-		publish("log", "tested");
+	bool isBad(char c) {
+		bool visibleAscii = (c >= 33 && c <= 126);
+		return !visibleAscii;
+	}
+	static std::string asciiNoSpaces(std::string str) {
+		std::replace_if(str.begin(), str.end(), isBad, ':');
+		return str;
 	}
 
+	std::map<std::string, std::vector<std::string>> DiscordContext::Friend::statusList;
+
 	bool DiscordContext::connect() {
-		tester();
 		Core* core{};
 		auto result = Core::Create(appId, DiscordCreateFlags_Default, &core);
 		state.core.reset(core);
@@ -34,8 +47,8 @@ namespace ezecs::network {
 			publishf("err", "Failed to instantiate discord core! (err %i)", result);
 			return false;
 		}
-		state.core->SetLogHook(discord::LogLevel::Debug, [](discord::LogLevel level, const char *message) {
-			publishf("err", "Log(%u): %s", level, message);
+		state.core->SetLogHook(discord::LogLevel::Info, [](discord::LogLevel level, const char *message) {
+			publishf("err", "DISCORD %s: %s", toString(level).c_str(), message);
 		});
 		state.core->UserManager().OnCurrentUserUpdate.Connect([&]() {
 			state.core->UserManager().GetCurrentUser(&state.currentUser);
@@ -115,12 +128,12 @@ namespace ezecs::network {
 			}
 			discord::Relationship relat{};
 			if (discord::Result::Ok == state.core->RelationshipManager().Get(idToGet, &relat)) {
-				publishf("log", "%s is %s", relat.GetUser().GetUsername(), toString(relat.GetPresence().GetStatus()).c_str());
+				publishf("log", "%s is %s", asciiNoSpaces(relat.GetUser().GetUsername()).c_str(),
+							toString(relat.GetPresence().GetStatus()).c_str());
 			} else {
 				publishf("err", "Could not find %s.", lastFrndName.c_str());
 			}
 		} else {
-			updateFriends();
 			publish("friend_info", friends);
 		}
 	}
@@ -142,11 +155,11 @@ namespace ezecs::network {
 			std::string status = "UNKNOWN";
 			if (relat.GetPresence().GetActivity().GetApplicationId() == appId) { status = " PRECESSING"; }
 			else { status = toString(relat.GetPresence().GetStatus()); }
-			friends[relat.GetUser().GetUsername()][relat.GetUser().GetDiscriminator()] = {
+			friends[asciiNoSpaces(relat.GetUser().GetUsername())][relat.GetUser().GetDiscriminator()] = {
 						relat.GetUser().GetId(), relat.GetPresence().GetStatus(),
 			};
 			Friend::statusList[status].emplace_back(
-						(std::string(relat.GetUser().GetUsername()) + " " +  std::string(relat.GetUser().GetDiscriminator()))
+						(asciiNoSpaces(relat.GetUser().GetUsername()) + " " +  std::string(relat.GetUser().GetDiscriminator()))
 						.c_str());
 		}
 	}

@@ -10,15 +10,23 @@ namespace ezecs::network {
 	static constexpr auto appId = 667545903715975168;
 	static std::string toString(discord::Status statusNum){ 
 		switch(statusNum) {
-			case discord::Status::Offline: return "OFFLINE";
-			case discord::Status::Online: return "ONLINE";
+			case discord::Status::Online: return "ACTIVE";
 			case discord::Status::Idle: return "IDLE";
-			case discord::Status::DoNotDisturb: return "BUSY";
+			case discord::Status::DoNotDisturb: return "NO DISTURB";
+			case discord::Status::Offline: return "OFFLINE";
 			default: return "UNKNOWN";
 		}
 	}
 
+	std::map<std::string, std::vector<std::string>> DiscordContext::Friend::statusList;
+	
+	void tester() {
+		RTU_STATIC_SSUB(testerSub, "friend_info", tester);
+		publish("log", "tested");
+	}
+
 	bool DiscordContext::connect() {
+		tester();
 		Core* core{};
 		auto result = Core::Create(appId, DiscordCreateFlags_Default, &core);
 		state.core.reset(core);
@@ -112,14 +120,8 @@ namespace ezecs::network {
 				publishf("err", "Could not find %s.", lastFrndName.c_str());
 			}
 		} else {
-			publish("log", "Status of Friends:");
-			std::map<std::string, std::vector<std::string>> statusToNames;
-			updateFriends(&statusToNames);
-			for (auto i = statusToNames.rbegin(); i != statusToNames.rend(); ++i) {
-				for (auto &statName : i->second ) {
-					publishf("log", "%11s %s", i->first.c_str(), statName.c_str());
-				}
-			}
+			updateFriends();
+			publish("friend_info", friends);
 		}
 	}
 	bool DiscordContext::ovrl() {
@@ -127,26 +129,25 @@ namespace ezecs::network {
 	}
 
 
-	void DiscordContext::updateFriends(std::map<std::string, std::vector<std::string>> *statToName) {
+	void DiscordContext::updateFriends() {
 		state.core->RelationshipManager().Filter([](discord::Relationship const &relationship) -> bool {
 			return relationship.GetType() == discord::RelationshipType::Friend;
 		});
 		std::int32_t friendCount{0};
 		state.core->RelationshipManager().Count(&friendCount);
 		discord::Relationship relat{};
+		Friend::statusList.clear();
 		for (auto i = 0; i < friendCount; ++i) {
 			state.core->RelationshipManager().GetAt(i, &relat);
 			std::string status = "UNKNOWN";
-			if (relat.GetPresence().GetActivity().GetApplicationId() == appId) { status = "PRECESSING"; }
+			if (relat.GetPresence().GetActivity().GetApplicationId() == appId) { status = " PRECESSING"; }
 			else { status = toString(relat.GetPresence().GetStatus()); }
 			friends[relat.GetUser().GetUsername()][relat.GetUser().GetDiscriminator()] = {
 						relat.GetUser().GetId(), relat.GetPresence().GetStatus(),
 			};
-			if (statToName) {
-				(*statToName)[status].emplace_back(
-							(std::string(relat.GetUser().GetUsername()) + " " +  std::string(relat.GetUser().GetDiscriminator()))
-							.c_str());
-			}
+			Friend::statusList[status].emplace_back(
+						(std::string(relat.GetUser().GetUsername()) + " " +  std::string(relat.GetUser().GetDiscriminator()))
+						.c_str());
 		}
 	}
 }

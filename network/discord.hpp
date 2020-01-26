@@ -9,18 +9,6 @@
 
 namespace ezecs::network {
 	class DiscordContext {
-			struct State {
-				discord::User currentUser;
-				std::unique_ptr<discord::Core> core;
-			} state;
-			struct Friend {
-				discord::UserId id;
-				discord::Status status;
-			};
-			std::map<std::string, std::map<std::string, Friend>> friends;
-			void updateFriends(std::map<std::string, std::vector<std::string>> *statToName = nullptr);
-			std::string lastFrndName, lastFrndDscrm;
-			
 		public:
 			bool connect();
 			void tick();
@@ -29,5 +17,21 @@ namespace ezecs::network {
 			void list();
 			void frnd(const char *name, const char *dscrm);
 			bool ovrl();
+			
+			struct Friend {
+				discord::UserId id;
+				discord::Status status;
+				static std::map<std::string, std::vector<std::string>> statusList;
+			};
+			typedef std::map<std::string, std::map<std::string, Friend>> friendsList;
+			
+		private:
+			struct State {
+				discord::User currentUser;
+				std::unique_ptr<discord::Core> core;
+			} state;
+			friendsList friends;
+			void updateFriends();
+			std::string lastFrndName, lastFrndDscrm;
 	};	
 }

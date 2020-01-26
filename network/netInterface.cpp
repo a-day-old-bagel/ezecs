@@ -8,6 +8,7 @@ using namespace rtu::topics;
 namespace ezecs::network {
 
   void NetInterface::assumeRole(Role role, const char *str) {
+  	dctxt.connect();
 	  currentRole = role;
     switch(role) {
       case SERVER: {
@@ -17,6 +18,7 @@ namespace ezecs::network {
           publish("err", "Attempted server creation using reserved GUID - recreating.");
           assumeRole(); // Recurse until guid is acceptable.
         }
+        dctxt.host();
       } break;
       case CLIENT: {
         server.reset();
@@ -51,8 +53,17 @@ namespace ezecs::network {
   uint32_t NetInterface::getRole() const {
     return currentRole;
   }
+  
+  void NetInterface::list() {
+  	dctxt.list();
+  }
+
+	void NetInterface::frnd(const char *name, const char *dscrm) {
+		dctxt.frnd(name, dscrm);
+	}
 
   void NetInterface::tick() {
+  	dctxt.tick();
     switch(currentRole) {
       case SERVER: {
         server->tick(requestPackets, syncPackets, freshConnections);

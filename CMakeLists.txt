@@ -12,18 +12,18 @@ if ( NOT TARGET ezecs_extern_interface )
   set( TARGET_PREFIX ezecs_extern )
   # SLIKENET
   include( realtimeutils/helpers.cmake )
-  option( RAKNET_ENABLE_DLL "Generate the DLL project if true." FALSE )
-  option( RAKNET_ENABLE_STATIC "Generate the static library project if true." TRUE )
+  option( RAKNET_ENABLE_DLL "Generate the DLL project if true." TRUE )
+  option( RAKNET_ENABLE_STATIC "Generate the static library project if true." FALSE )
   option( RAKNET_GENERATE_INCLUDE_ONLY_DIR "Setup a include/RakNet/ directory in which all the headers are copied." FALSE )
   option( RAKNET_ENABLE_SAMPLES "Generate RakNet sample projects if true." FALSE )
   add_subdirectory( slikenet )
   extern( include ${CMAKE_CURRENT_SOURCE_DIR}/slikenet/Source )
-  extern( link RakNetLibStatic )
+  extern( link RakNetDLL )
   # REALTIMEUTILS
   add_subdirectory( realtimeutils )
   extern( link realtimeutils )
   # DISCORD
-  option( DISCORD_BUILD_EXAMPLES "Build Examples"	OFF )
+  option( DISCORD_BUILD_EXAMPLES "Build Examples"	ON )
   add_subdirectory( discordcppsdk )
   extern( link discord )
   # CREATE ezecs_extern_interface

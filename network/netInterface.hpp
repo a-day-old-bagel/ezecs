@@ -2,6 +2,7 @@
 
 #include "server.hpp"
 #include "client.hpp"
+#include "discord.hpp"
 #include "constants.hpp"
 
 #include <memory>
@@ -14,6 +15,8 @@ namespace ezecs::network {
 
 			void assumeRole(Role role = NONE, const char *str = nullptr);
 			[[nodiscard]] uint32_t getRole() const;
+			void list();
+			void frnd(const char *name = nullptr, const char *dscrm = nullptr);
 
 			void tick();
 			void send(const SLNet::BitStream &stream, PacketPriority priority = LOW_PRIORITY,
@@ -42,6 +45,8 @@ namespace ezecs::network {
 			uint32_t currentRole = NONE;
 			DataStructures::List<SLNet::SystemAddress> emptyAddresses;
 			DataStructures::List<SLNet::RakNetGUID> emptyGuids;
+			
+			DiscordContext dctxt;
 			
 			void discardPacketCollection(std::vector<SLNet::Packet *> &packets);
 

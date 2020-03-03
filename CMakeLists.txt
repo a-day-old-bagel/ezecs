@@ -43,7 +43,7 @@ option( EZECS_SET_PATH_ONLY "Only set the variables 'EZECS_SOURCE_DIR' and 'EZEC
 
 if ( EZECS_SET_PATH_ONLY )
   set( EZECS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE STRING "Path to ezecs source" )
-  set( EZECS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated CACHE STRING "Path to ezecs build" )
+  set( EZECS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated CACHE STRING "Path to ezecs build" FORCE )
   message( STATUS "Setting EZECS_SOURCE_DIR to ${EZECS_SOURCE_DIR} and EZECS_BINARY_DIR to ${EZECS_BINARY_DIR}" )
 
 else ( EZECS_SET_PATH_ONLY )

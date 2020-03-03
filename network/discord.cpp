@@ -19,6 +19,18 @@ namespace ezecs::network {
 			default: return "UNKNOWN";
 		}
 	}
+	static std::string toString(const discord::Activity &activity) {
+		std::string verb;
+		std::string object = appId == activity.GetApplicationId() ? "Precession" : "something";
+		switch(activity.GetType()) {
+			case discord::ActivityType::Listening: { verb = "listening to"; break; }
+			case discord::ActivityType::Playing: { verb = "playing"; break; }
+			case discord::ActivityType::Streaming: { verb = "streaming"; break; }
+			case discord::ActivityType::Watching: { verb = "watching"; break; }
+			default: { verb = "online"; object = ""; }
+		}
+		return verb + " " + object;
+	}
 	static std::string toString(discord::LogLevel levelNum) {
 		switch(levelNum) {
 			case discord::LogLevel::Info: return "INFO";
@@ -42,7 +54,7 @@ namespace ezecs::network {
 
 	bool DiscordContext::connect() {
 		Core* core{};
-		auto result = Core::Create(appId, DiscordCreateFlags_Default, &core);
+		auto result = Core::Create(appId, DiscordCreateFlags_NoRequireDiscord, &core);
 		state.core.reset(core);
 		if ( ! state.core) {
 			publishf("err", "Failed to instantiate discord core! (err %i)", result);
@@ -128,8 +140,8 @@ namespace ezecs::network {
 			}
 			discord::Relationship relat{};
 			if (discord::Result::Ok == state.core->RelationshipManager().Get(idToGet, &relat)) {
-				publishf("log", "%s is %s", asciiNoSpaces(relat.GetUser().GetUsername()).c_str(),
-							toString(relat.GetPresence().GetStatus()).c_str());
+				publishf("log", "%s is %s.", asciiNoSpaces(relat.GetUser().GetUsername()).c_str(),
+				         toString(relat.GetPresence().GetStatus()).c_str());
 			} else {
 				publishf("err", "Could not find %s.", lastFrndName.c_str());
 			}

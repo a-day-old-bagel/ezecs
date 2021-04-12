@@ -62,14 +62,15 @@ namespace ezecs::network {
 		}
 		state.core->SetLogHook(discord::LogLevel::Info, [](discord::LogLevel level, const char *message) {
 			publishf("err", "DISCORD %s: %s", toString(level).c_str(), message);
-			if (level == discord::LogLevel::Error) {
-				publish("err", "\nPlease make sure you're logged into discord.");
-			}
+			// if (level == discord::LogLevel::Error) {
+			// 	publish("err", "\nPlease make sure you're logged into discord.");
+			// }
 		});
 		state.core->UserManager().OnCurrentUserUpdate.Connect([&]() {
 			state.core->UserManager().GetCurrentUser(&state.currentUser);
 		});
 		updateFriends();
+		publishf("log", "\nDiscord Connection Active");
 		return true;
 	}
 	

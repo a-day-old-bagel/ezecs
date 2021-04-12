@@ -13,6 +13,8 @@ namespace ezecs::network {
 
 		public:
 
+			DiscordContext dctxt;
+
 			void assumeRole(Role role = NONE, const char *str = nullptr);
 			[[nodiscard]] uint32_t getRole() const;
 			void list();
@@ -45,8 +47,6 @@ namespace ezecs::network {
 			uint32_t currentRole = NONE;
 			DataStructures::List<SLNet::SystemAddress> emptyAddresses;
 			DataStructures::List<SLNet::RakNetGUID> emptyGuids;
-			
-			DiscordContext dctxt;
 			
 			void discardPacketCollection(std::vector<SLNet::Packet *> &packets);
 

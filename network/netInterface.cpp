@@ -8,7 +8,6 @@ using namespace rtu::topics;
 namespace ezecs::network {
 
   void NetInterface::assumeRole(Role role, const char *str) {
-  	dctxt.connect();
 	  currentRole = role;
     switch(role) {
       case SERVER: {

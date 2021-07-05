@@ -1,11 +1,14 @@
 
-cmake_minimum_required( VERSION 3.3 )
+cmake_minimum_required( VERSION 3.9.2 FATAL_ERROR )
+cmake_policy( VERSION 3.9.2...3.17 )
+
 set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 set( CMAKE_DISABLE_IN_SOURCE_BUILD ON )
-project( ezecs )
 
-set( CMAKE_CXX_STANDARD 17 )
+set( CMAKE_CXX_STANDARD 20 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
+
+project( ezecs )
 
 # If ezecs is used by multiple targets with different respective configs, build config-independent code only once.
 if ( NOT TARGET ezecs_extern_interface )

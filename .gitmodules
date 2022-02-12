@@ -1,9 +1,9 @@
 [submodule "realtimeutils"]
 	path = realtimeutils
-	url = https://github.com/a-day-old-bagel/realtimeutils
+	url = ../../a-day-old-bagel/realtimeutils
 [submodule "slikenet"]
 	path = slikenet
-	url = https://github.com/slikesoft/slikenet
+	url = ../../slikesoft/slikenet
 [submodule "discordcppsdk"]
 	path = discordcppsdk
-	url = https://github.com/a-day-old-bagel/discordcppsdk
+	url = ../../a-day-old-bagel/discordcppsdk

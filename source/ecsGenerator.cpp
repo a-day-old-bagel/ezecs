@@ -33,6 +33,7 @@
  * Currently, component dependency cycles will result in infinite loops in this code
  */
 
+#include <cstring>
 #include <sstream>
 #include <fstream>
 #include <regex>
